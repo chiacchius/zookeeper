@@ -19,11 +19,14 @@
 package org.apache.zookeeper.test;
 
 import static org.apache.zookeeper.client.FourLetterWordMain.send4LetterWord;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ProtocolException;
@@ -48,7 +51,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZKTestCase;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.client.ZKClientConfig;
+import org.apache.zookeeper.common.IOUtils;
 import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.common.X509Exception.SSLContextException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
@@ -57,8 +60,8 @@ import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FilePadding;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.util.OSMXBean;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.After;
+import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -335,7 +338,7 @@ public abstract class ClientBase extends ZKTestCase {
         thread.join(millis);
         if (thread.isAlive()) {
             LOG.error("Thread {} : {}", thread.getName(), Arrays.toString(thread.getStackTrace()));
-            assertFalse(true, "thread " + thread.getName() + " still alive after join");
+            assertFalse("thread " + thread.getName() + " still alive after join", true);
         }
     }
 
@@ -348,9 +351,6 @@ public abstract class ClientBase extends ZKTestCase {
     }
 
     static File createTmpDir(File parentDir, boolean createInitFile) throws IOException {
-        if (!parentDir.exists()) {
-            parentDir.mkdir();
-        }
         File tmpFile = File.createTempFile("test", ".junit", parentDir);
         // don't delete tmpFile - this ensures we don't attempt to create
         // a tmpDir with a duplicate name
@@ -397,8 +397,8 @@ public abstract class ClientBase extends ZKTestCase {
         zks.setCreateSessionTrackerServerId(serverId);
         factory.startup(zks);
         assertTrue(
-                ClientBase.waitForServerUp("127.0.0.1:" + port, CONNECTION_TIMEOUT, factory.isSecure()),
-                "waiting for server up");
+                "waiting for server up",
+                ClientBase.waitForServerUp("127.0.0.1:" + port, CONNECTION_TIMEOUT, factory.isSecure()));
     }
 
     /**
@@ -447,8 +447,8 @@ public abstract class ClientBase extends ZKTestCase {
             final int PORT = getPort(hostPort);
 
             assertTrue(
-                    ClientBase.waitForServerDown("127.0.0.1:" + PORT, CONNECTION_TIMEOUT, factory.isSecure()),
-                    "waiting for server down");
+                    "waiting for server down",
+                    ClientBase.waitForServerDown("127.0.0.1:" + PORT, CONNECTION_TIMEOUT, factory.isSecure()));
         }
     }
 
@@ -469,7 +469,7 @@ public abstract class ClientBase extends ZKTestCase {
         allClientsSetup = true;
     }
 
-    @BeforeEach
+    @Before
     public void setUp() throws Exception {
         setUpWithServerId(1);
     }
@@ -539,7 +539,7 @@ public abstract class ClientBase extends ZKTestCase {
         for (ObjectName bean : children) {
             LOG.info("unexpected:{}", bean.toString());
         }
-        assertEquals(0, children.size(), "Unexpected bean exists!");
+        assertEquals("Unexpected bean exists!", 0, children.size());
     }
 
     /**
@@ -578,7 +578,7 @@ public abstract class ClientBase extends ZKTestCase {
         }
     }
 
-    @AfterEach
+    @After
     public void tearDown() throws Exception {
         LOG.info("tearDown starting");
 
@@ -587,7 +587,7 @@ public abstract class ClientBase extends ZKTestCase {
         stopServer();
 
         if (tmpDir != null) {
-            assertTrue(recursiveDelete(tmpDir), "delete " + tmpDir.toString());
+            assertTrue("delete " + tmpDir.toString(), recursiveDelete(tmpDir));
         }
 
         // This has to be set to null when the same instance of this class is reused between test cases
@@ -696,6 +696,30 @@ public abstract class ClientBase extends ZKTestCase {
         }
     }
 
+    public static String readFile(File file) throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        BufferedInputStream is = new BufferedInputStream(new FileInputStream(file));
+        try {
+            IOUtils.copyBytes(is, os, 1024, true);
+        } finally {
+            is.close();
+        }
+        return os.toString();
+    }
+
+    public static String join(String separator, Object[] parts) {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (Object part : parts) {
+            if (!first) {
+                sb.append(separator);
+                first = false;
+            }
+            sb.append(part);
+        }
+        return sb.toString();
+    }
+
     public static ZooKeeper createZKClient(String cxnString) throws Exception {
         return createZKClient(cxnString, CONNECTION_TIMEOUT);
     }
@@ -714,15 +738,9 @@ public abstract class ClientBase extends ZKTestCase {
         return createZKClient(cxnString, sessionTimeout, CONNECTION_TIMEOUT);
     }
 
-    public static ZooKeeper createZKClient(String cxnString, int sessionTimeout,
-        long connectionTimeout) throws IOException {
-        return createZKClient(cxnString, sessionTimeout, connectionTimeout, new ZKClientConfig());
-    }
-
-    public static ZooKeeper createZKClient(String cxnString, int sessionTimeout,
-        long connectionTimeout, ZKClientConfig config) throws IOException {
+    public static ZooKeeper createZKClient(String cxnString, int sessionTimeout, long connectionTimeout) throws IOException {
         CountdownWatcher watcher = new CountdownWatcher();
-        ZooKeeper zk = new ZooKeeper(cxnString, sessionTimeout, watcher, config);
+        ZooKeeper zk = new ZooKeeper(cxnString, sessionTimeout, watcher);
         try {
             watcher.waitForConnected(connectionTimeout);
         } catch (InterruptedException | TimeoutException e) {

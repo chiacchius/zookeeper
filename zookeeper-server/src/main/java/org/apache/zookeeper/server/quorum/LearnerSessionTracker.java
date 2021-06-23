@@ -225,7 +225,4 @@ public class LearnerSessionTracker extends UpgradeableSessionTracker {
         return new HashMap<Long, Set<Long>>();
     }
 
-    public Set<Long> globalSessions() {
-        return globalSessionsWithTimeouts.keySet();
-    }
 }

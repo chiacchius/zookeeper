@@ -45,13 +45,9 @@ public class ProviderRegistry {
     public static void initialize() {
         synchronized (ProviderRegistry.class) {
             IPAuthenticationProvider ipp = new IPAuthenticationProvider();
+            DigestAuthenticationProvider digp = new DigestAuthenticationProvider();
             authenticationProviders.put(ipp.getScheme(), ipp);
-
-            if (DigestAuthenticationProvider.isEnabled()) {
-                DigestAuthenticationProvider digp = new DigestAuthenticationProvider();
-                authenticationProviders.put(digp.getScheme(), digp);
-            }
-
+            authenticationProviders.put(digp.getScheme(), digp);
             Enumeration<Object> en = System.getProperties().keys();
             while (en.hasMoreElements()) {
                 String k = (String) en.nextElement();

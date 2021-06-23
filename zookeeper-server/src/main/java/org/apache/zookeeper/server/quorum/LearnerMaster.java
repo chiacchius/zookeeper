@@ -124,7 +124,7 @@ public abstract class LearnerMaster {
      * get the first zxid of the next epoch
      * @param sid learner id
      * @param lastAcceptedEpoch
-     * @return the first zxid of the next epoch
+     * @return
      * @throws InterruptedException
      * @throws IOException
      */

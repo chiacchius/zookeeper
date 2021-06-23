@@ -39,10 +39,10 @@ public class ResponseCache {
 
     private final Map<String, Entry> cache;
 
-    public ResponseCache(int cacheSize, String requestType) {
+    public ResponseCache(int cacheSize) {
         this.cacheSize = cacheSize;
         cache = Collections.synchronizedMap(new LRUCache<>(cacheSize));
-        LOG.info("{} response cache size is initialized with value {}.", requestType, cacheSize);
+        LOG.info("Response cache size is initialized with value {}.", cacheSize);
     }
 
     public int getCacheSize() {

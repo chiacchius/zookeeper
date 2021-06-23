@@ -43,7 +43,6 @@ import org.apache.jute.BinaryOutputArchive;
 import org.apache.jute.InputArchive;
 import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
-import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ServerMetrics;
 import org.apache.zookeeper.server.ServerStats;
 import org.apache.zookeeper.server.TxnLogEntry;
@@ -277,7 +276,7 @@ public class FileTxnLog implements TxnLog, Closeable {
                 "Current zxid {} is <= {} for {}",
                 hdr.getZxid(),
                 lastZxidSeen,
-                Request.op2String(hdr.getType()));
+                hdr.getType());
         } else {
             lastZxidSeen = hdr.getZxid();
         }
@@ -314,7 +313,7 @@ public class FileTxnLog implements TxnLog, Closeable {
      * ascending order.
      * @param logDirList array of files
      * @param snapshotZxid return files at, or before this zxid
-     * @return log files that starts at, or just before, the snapshot and subsequent ones
+     * @return
      */
     public static File[] getLogFiles(File[] logDirList, long snapshotZxid) {
         List<File> files = Util.sortDataDir(logDirList, LOG_FILE_PREFIX, true);
@@ -355,7 +354,10 @@ public class FileTxnLog implements TxnLog, Closeable {
         // if a log file is more recent we must scan it to find
         // the highest zxid
         long zxid = maxLog;
-        try (FileTxnLog txn = new FileTxnLog(logDir); TxnIterator itr = txn.read(maxLog)) {
+        TxnIterator itr = null;
+        try {
+            FileTxnLog txn = new FileTxnLog(logDir);
+            itr = txn.read(maxLog);
             while (true) {
                 if (!itr.next()) {
                     break;
@@ -365,8 +367,20 @@ public class FileTxnLog implements TxnLog, Closeable {
             }
         } catch (IOException e) {
             LOG.warn("Unexpected exception", e);
+        } finally {
+            close(itr);
         }
         return zxid;
+    }
+
+    private void close(TxnIterator itr) {
+        if (itr != null) {
+            try {
+                itr.close();
+            } catch (IOException ioe) {
+                LOG.warn("Error closing file iterator", ioe);
+            }
+        }
     }
 
     /**
@@ -454,7 +468,9 @@ public class FileTxnLog implements TxnLog, Closeable {
      * @return true if successful false if not
      */
     public boolean truncate(long zxid) throws IOException {
-        try (FileTxnIterator itr = new FileTxnIterator(this.logDir, zxid)) {
+        FileTxnIterator itr = null;
+        try {
+            itr = new FileTxnIterator(this.logDir, zxid);
             PositionInputStream input = itr.inputStream;
             if (input == null) {
                 throw new IOException("No log files found to truncate! This could "
@@ -471,6 +487,8 @@ public class FileTxnLog implements TxnLog, Closeable {
                     LOG.warn("Unable to truncate {}", itr.logFile);
                 }
             }
+        } finally {
+            close(itr);
         }
         return true;
     }

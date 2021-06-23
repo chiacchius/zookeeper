@@ -18,14 +18,23 @@
 package org.apache.zookeeper.graph.servlets;
 
 import java.io.IOException;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.DataOutputStream;
+import java.io.PrintStream;
+
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Set;
-import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.apache.zookeeper.graph.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+
 
 public class Throughput extends JsonServlet
 {
@@ -36,88 +45,82 @@ public class Throughput extends JsonServlet
     private LogSource source = null;
 
     public Throughput(LogSource src) throws Exception {
-		this.source = src;
+	this.source = src; 
     }
 
     public String handleRequest(JsonRequest request) throws Exception {
-		long startTime = 0;
-		long endTime = 0;
-		long period = 0;
-		long scale = 0;
+	long starttime = 0;
+	long endtime = 0;
+	long period = 0;
+	long scale = 0;
+	
+	starttime = request.getNumber("start", 0);
+	endtime = request.getNumber("end", 0);
+	period = request.getNumber("period", 0);
+	
 
-		startTime = request.getNumber("start", 0);
-		endTime = request.getNumber("end", 0);
-		period = request.getNumber("period", 0);
-
-
-		if (startTime == 0) { startTime = source.getStartTime(); }
-		if (endTime == 0) {
-			if (period > 0) {
-			endTime = startTime + period;
-			} else {
-			endTime = source.getEndTime();
-			}
-		}
-
-		String scalestr = request.getString("scale", "minutes");
-		if (scalestr.equals("seconds")) {
-			scale = MS_PER_SEC;
-		} else if (scalestr.equals("hours")) {
-			scale = MS_PER_HOUR;
-		} else {
-			scale = MS_PER_MIN;
-		}
-
-		LogIterator iter = source.iterator(startTime, endTime);
-		String jsonString = getJSON(iter, scale);
-		iter.close();
-		return jsonString;
+	if (starttime == 0) { starttime = source.getStartTime(); }
+	if (endtime == 0) { 
+	    if (period > 0) {
+		endtime = starttime + period;
+	    } else {
+		endtime = source.getEndTime(); 
+	    }
 	}
+	
+	String scalestr = request.getString("scale", "minutes");
+	if (scalestr.equals("seconds")) {
+	    scale = MS_PER_SEC;
+	} else if (scalestr.equals("hours")) {
+	    scale = MS_PER_HOUR;
+	} else {
+	    scale = MS_PER_MIN;
+	} 	
+	
+	LogIterator iter = source.iterator(starttime, endtime);
+	
+	long current = 0;
+	long currentms = 0;
+	Set<Long> zxids_ms = new HashSet<Long>();
+	long zxidcount = 0;
 
-	protected String getJSON(final LogIterator iter, final long scale) throws IOException {
-		long current = 0;
-		long currentms = 0;
-		Set<Long> zxids_ms = new HashSet<Long>();
-		long zxidCount = 0;
+	JSONArray events = new JSONArray();
+	while (iter.hasNext()) {
+	    LogEntry e = iter.next();
+	    if (e.getType() != LogEntry.Type.TXN) {
+		continue;
+	    }
 
-		ObjectMapper mapper = new ObjectMapper();
-		ArrayNode events = mapper.createArrayNode();
+	    TransactionEntry cxn = (TransactionEntry)e;
+	    
+	    long ms = cxn.getTimestamp();
+	    long inscale = ms/scale;
 
-		while (iter.hasNext()) {
-			LogEntry e = iter.next();
-			if (e.getType() != LogEntry.Type.TXN) {
-			continue;
-			}
+	    if (currentms != ms && currentms != 0) {
+		zxidcount += zxids_ms.size();
+		zxids_ms.clear();
+	    }
 
-			TransactionEntry cxn = (TransactionEntry)e;
+	    if (inscale != current && current != 0) {
+		JSONObject o = new JSONObject();
+		o.put("time", current*scale);
+		o.put("count", zxidcount);
+		events.add(o);
+		zxidcount = 0;
+	    }
+	    current = inscale;
+	    currentms = ms;
 
-			long ms = cxn.getTimestamp();
-			long inscale = ms/ scale;
-
-			if (currentms != ms && currentms != 0) {
-				zxidCount += zxids_ms.size();
-				zxids_ms.clear();
-			}
-
-			if (inscale != current && current != 0) {
-				JsonNode node = mapper.createObjectNode();
-				((ObjectNode) node).put("time", current * scale);
-				((ObjectNode) node).put("count", zxidCount);
-				events.add(node);
-				zxidCount = 0;
-			}
-			current = inscale;
-			currentms = ms;
-
-			zxids_ms.add(cxn.getZxid());
-		}
-
-		JsonNode node = mapper.createObjectNode();
-		((ObjectNode) node).put("time", current * scale);
-		((ObjectNode) node).put("count", zxidCount);
-		events.add(node);
-
-		String jsonString = mapper.writer(new MinimalPrettyPrinter()).writeValueAsString(events);
-		return jsonString;
+	    zxids_ms.add(cxn.getZxid());
 	}
-}
+	JSONObject o = new JSONObject();
+	o.put("time", current*scale);
+	o.put("count", zxidcount);
+	events.add(o);
+
+	iter.close();
+	
+	return JSONValue.toJSONString(events);
+    }
+
+};

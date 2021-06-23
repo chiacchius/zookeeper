@@ -28,7 +28,4 @@ RUN apt-get install -y \
   libcppunit-dev \
   libtool \
   openssl \
-  libssl-dev \
-  libsasl2-modules-gssapi-mit \
-  libsasl2-modules \
-  libsasl2-dev
+  libssl-dev

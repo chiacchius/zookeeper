@@ -65,7 +65,7 @@ public class ZKUtil {
     }
 
     /**
-     * Same as {@link #deleteRecursive(org.apache.zookeeper.ZooKeeper, java.lang.String, int)}
+     * Same as {@link #deleteRecursive(org.apache.zookeeper.ZooKeeper, java.lang.String, int)
      * kept here for compatibility with 3.5 clients.
      *
      * @since 3.6.1
@@ -163,7 +163,7 @@ public class ZKUtil {
             return "Read permission is denied on the file '" + file.getAbsolutePath() + "'";
         }
         if (file.isDirectory()) {
-            return "'" + file.getAbsolutePath() + "' is a directory. it must be a file.";
+            return "'" + file.getAbsolutePath() + "' is a direcory. it must be a file.";
         }
         return null;
     }

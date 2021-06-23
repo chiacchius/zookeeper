@@ -13,8 +13,9 @@
   limitations under the License. See accompanying LICENSE file.
 -->
 <!DOCTYPE suppressions PUBLIC
-        "-//Checkstyle//DTD SuppressionFilter Configuration 1.0//EN"
-        "https://checkstyle.org/dtds/suppressions_1_0.dtd">
+        "-//Puppy Crawl//DTD Suppressions 1.1//EN"
+        "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
+
 <suppressions>
     <!-- suppress all checks in the generated directories -->
     <suppress checks=".*" files=".+[\\/]classes[\\/].+\.java" />
@@ -31,6 +32,4 @@
 
     <!-- TODO ZOOKEEPER-3469 -->
     <suppress checks="Javadoc.+" files=".+[\\/]zookeeper-server[\\/].+\.java"/>
-
-    <suppress checks="OperatorWrap|ModifierOrder" files="zookeeper-server/src/test/java/org/apache/zookeeper/common/CertificatesToPlayWith\.java" />
 </suppressions>

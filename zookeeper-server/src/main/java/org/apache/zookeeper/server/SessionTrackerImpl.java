@@ -21,7 +21,6 @@ package org.apache.zookeeper.server;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.MessageFormat;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -50,7 +49,7 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
 
     private final ExpiryQueue<SessionImpl> sessionExpiryQueue;
 
-    protected final ConcurrentMap<Long, Integer> sessionsWithTimeout;
+    private final ConcurrentMap<Long, Integer> sessionsWithTimeout;
     private final AtomicLong nextSessionId = new AtomicLong();
 
     public static class SessionImpl implements Session {
@@ -84,16 +83,11 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
     }
 
     /**
-     * Generates an initial sessionId.
-     *
-     * <p>High order 1 byte is serverId, next 5 bytes are from timestamp, and low order 2 bytes are 0s.
-     * Use {@literal ">>> 8"}, not {@literal ">> 8"} to make sure that the high order 1 byte is entirely
-     * up to the server Id.
-     *
-     * <p>See also http://jira.apache.org/jira/browse/ZOOKEEPER-1622
-     *
+     * Generates an initial sessionId. High order 1 byte is serverId, next
+     * 5 bytes are from timestamp, and low order 2 bytes are 0s.
+     * Use ">>> 8", not ">> 8" to make sure that the high order 1 byte is entirely up to the server Id(@see ZOOKEEPER-1622).
      * @param id server Id
-     * @return the session Id
+     * @return the Session Id
      */
     public static long initializeNextSessionId(long id) {
         long nextSid;
@@ -347,13 +341,5 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
     @Override
     public boolean isLocalSessionsEnabled() {
         return false;
-    }
-
-    public Set<Long> globalSessions() {
-        return sessionsById.keySet();
-    }
-
-    public Set<Long> localSessions() {
-        return Collections.emptySet();
     }
 }

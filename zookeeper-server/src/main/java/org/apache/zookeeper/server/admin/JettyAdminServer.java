@@ -21,10 +21,11 @@ package org.apache.zookeeper.server.admin;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -268,7 +269,14 @@ public class JettyAdminServer implements AdminServer {
      * Returns a list of URLs to each registered Command.
      */
     private List<String> commandLinks() {
-        return Commands.getPrimaryNames().stream().sorted().map(command -> String.format("<a href=\"%s\">%s</a>", commandUrl + "/" + command , command)).collect(Collectors.toList());
+        List<String> links = new ArrayList<String>();
+        List<String> commands = new ArrayList<String>(Commands.getPrimaryNames());
+        Collections.sort(commands);
+        for (String command : commands) {
+            String url = commandUrl + "/" + command;
+            links.add(String.format("<a href=\"%s\">%s</a>", url, command));
+        }
+        return links;
     }
 
     /**

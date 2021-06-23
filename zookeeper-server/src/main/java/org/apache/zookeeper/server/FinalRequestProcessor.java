@@ -18,7 +18,6 @@
 
 package org.apache.zookeeper.server;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -77,10 +76,8 @@ import org.apache.zookeeper.proto.SetWatches;
 import org.apache.zookeeper.proto.SetWatches2;
 import org.apache.zookeeper.proto.SyncRequest;
 import org.apache.zookeeper.proto.SyncResponse;
-import org.apache.zookeeper.proto.WhoAmIResponse;
 import org.apache.zookeeper.server.DataTree.ProcessTxnResult;
 import org.apache.zookeeper.server.quorum.QuorumZooKeeperServer;
-import org.apache.zookeeper.server.util.AuthUtil;
 import org.apache.zookeeper.server.util.RequestPathMetricsCollector;
 import org.apache.zookeeper.txn.ErrorTxn;
 import org.slf4j.Logger;
@@ -108,7 +105,18 @@ public class FinalRequestProcessor implements RequestProcessor {
         this.requestPathMetricsCollector = zks.getRequestPathMetricsCollector();
     }
 
-    private ProcessTxnResult applyRequest(Request request) {
+    public void processRequest(Request request) {
+        LOG.debug("Processing request:: {}", request);
+
+        // request.addRQRec(">final");
+        long traceMask = ZooTrace.CLIENT_REQUEST_TRACE_MASK;
+        if (request.type == OpCode.ping) {
+            traceMask = ZooTrace.SERVER_PING_TRACE_MASK;
+        }
+        if (LOG.isTraceEnabled()) {
+            ZooTrace.logRequest(LOG, traceMask, 'E', request, "");
+        }
+
         ProcessTxnResult rc = zks.processTxn(request);
 
         // ZOOKEEPER-558:
@@ -122,7 +130,7 @@ public class FinalRequestProcessor implements RequestProcessor {
             // we are just playing diffs from the leader.
             if (closeSession(zks.serverCnxnFactory, request.sessionId)
                 || closeSession(zks.secureServerCnxnFactory, request.sessionId)) {
-                return rc;
+                return;
             }
         }
 
@@ -141,23 +149,6 @@ public class FinalRequestProcessor implements RequestProcessor {
             }
         }
 
-        return rc;
-    }
-
-    public void processRequest(Request request) {
-        LOG.debug("Processing request:: {}", request);
-
-        if (LOG.isTraceEnabled()) {
-            long traceMask = ZooTrace.CLIENT_REQUEST_TRACE_MASK;
-            if (request.type == OpCode.ping) {
-                traceMask = ZooTrace.SERVER_PING_TRACE_MASK;
-            }
-            ZooTrace.logRequest(LOG, traceMask, 'E', request, "");
-        }
-        ProcessTxnResult rc = null;
-        if (!request.isThrottled()) {
-          rc = applyRequest(request);
-        }
         if (request.cnxn == null) {
             return;
         }
@@ -173,7 +164,6 @@ public class FinalRequestProcessor implements RequestProcessor {
         Code err = Code.OK;
         Record rsp = null;
         String path = null;
-        int responseSize = 0;
         try {
             if (request.getHdr() != null && request.getHdr().getType() == OpCode.error) {
                 AuditHelper.addAuditLog(request, rc, true);
@@ -204,19 +194,13 @@ public class FinalRequestProcessor implements RequestProcessor {
             if (request.isStale()) {
                 ServerMetrics.getMetrics().STALE_REPLIES.add(1);
             }
-
-            if (request.isThrottled()) {
-              throw KeeperException.create(Code.THROTTLEDOP);
-            }
-
             AuditHelper.addAuditLog(request, rc);
-
             switch (request.type) {
             case OpCode.ping: {
                 lastOp = "PING";
                 updateStats(request, lastOp, lastZxid);
 
-                responseSize = cnxn.sendResponse(new ReplyHeader(ClientCnxn.PING_XID, lastZxid, 0), null, "response");
+                cnxn.sendResponse(new ReplyHeader(ClientCnxn.PING_XID, lastZxid, 0), null, "response");
                 return;
             }
             case OpCode.createSession: {
@@ -330,7 +314,7 @@ public class FinalRequestProcessor implements RequestProcessor {
             case OpCode.reconfig: {
                 lastOp = "RECO";
                 rsp = new GetDataResponse(
-                    ((QuorumZooKeeperServer) zks).self.getQuorumVerifier().toString().getBytes(UTF_8),
+                    ((QuorumZooKeeperServer) zks).self.getQuorumVerifier().toString().getBytes(),
                     rc.stat);
                 err = Code.get(rc.err);
                 break;
@@ -549,11 +533,6 @@ public class FinalRequestProcessor implements RequestProcessor {
                 requestPathMetricsCollector.registerRequest(request.type, removeWatches.getPath());
                 break;
             }
-            case OpCode.whoAmI: {
-                lastOp = "HOMI";
-                rsp = new WhoAmIResponse(AuthUtil.getClientInfos(request.authInfo));
-                break;
-             }
             case OpCode.getEphemerals: {
                 lastOp = "GETE";
                 GetEphemeralsRequest getEphemerals = new GetEphemeralsRequest();
@@ -607,7 +586,7 @@ public class FinalRequestProcessor implements RequestProcessor {
 
         try {
             if (path == null || rsp == null) {
-                responseSize = cnxn.sendResponse(hdr, rsp, "response");
+                cnxn.sendResponse(hdr, rsp, "response");
             } else {
                 int opCode = request.type;
                 Stat stat = null;
@@ -618,17 +597,17 @@ public class FinalRequestProcessor implements RequestProcessor {
                     case OpCode.getData : {
                         GetDataResponse getDataResponse = (GetDataResponse) rsp;
                         stat = getDataResponse.getStat();
-                        responseSize = cnxn.sendResponse(hdr, rsp, "response", path, stat, opCode);
+                        cnxn.sendResponse(hdr, rsp, "response", path, stat, opCode);
                         break;
                     }
                     case OpCode.getChildren2 : {
                         GetChildren2Response getChildren2Response = (GetChildren2Response) rsp;
                         stat = getChildren2Response.getStat();
-                        responseSize = cnxn.sendResponse(hdr, rsp, "response", path, stat, opCode);
+                        cnxn.sendResponse(hdr, rsp, "response", path, stat, opCode);
                         break;
                     }
                     default:
-                        responseSize = cnxn.sendResponse(hdr, rsp, "response");
+                        cnxn.sendResponse(hdr, rsp, "response");
                 }
             }
 
@@ -637,8 +616,6 @@ public class FinalRequestProcessor implements RequestProcessor {
             }
         } catch (IOException e) {
             LOG.error("FIXMSG", e);
-        } finally {
-            ServerMetrics.getMetrics().RESPONSE_BYTES.add(responseSize);
         }
     }
 

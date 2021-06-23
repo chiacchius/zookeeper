@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.zookeeper</groupId>
     <artifactId>parent</artifactId>
-    <version>3.8.0-SNAPSHOT</version>
+    <version>3.6.3</version>
   </parent>
 
   <artifactId>zookeeper-it</artifactId>
@@ -33,7 +33,6 @@
     ZooKeeper system tests
   </description>
 
-  <!-- (temporarily) disable quality checks in this module for known failures to be fixed later -->
   <properties>
     <skipTests>true</skipTests>
     <spotbugs.skip>true</spotbugs.skip>
@@ -54,8 +53,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
@@ -70,17 +69,15 @@
   </dependencies>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <testSourceDirectory>${project.basedir}/src/main/java/</testSourceDirectory>
-            <testClassesDirectory>${project.build.directory}/classes/</testClassesDirectory>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
+    <sourceDirectory>src</sourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <sourcepath>src</sourcepath>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

@@ -30,8 +30,8 @@
   <groupId>org.apache.zookeeper</groupId>
   <artifactId>parent</artifactId>
   <packaging>pom</packaging>
-  <!-- to change version: mvn -B release:update-versions -DdevelopmentVersion=3.6.0-SNAPSHOT -->
-  <version>3.8.0-SNAPSHOT</version>
+  <!-- to change version: mvn -\-batch-mode release:update-versions -DdevelopmentVersion=3.6.0-SNAPSHOT -->
+  <version>3.6.3</version>
   <name>Apache ZooKeeper</name>
   <description>
     ZooKeeper is a centralized service for maintaining configuration information, naming,
@@ -65,13 +65,14 @@
     <module>zookeeper-recipes</module>
     <module>zookeeper-assembly</module>
     <module>zookeeper-compatibility-tests</module>
+    <module>tests</module>
   </modules>
 
   <scm>
     <connection>scm:git:https://gitbox.apache.org/repos/asf/zookeeper.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/zookeeper.git</developerConnection>
     <url>https://gitbox.apache.org/repos/asf/zookeeper.git</url>
-    <tag>HEAD</tag>
+    <tag>release-3.6.3-2</tag>
   </scm>
   <issueManagement>
     <system>JIRA</system>
@@ -118,7 +119,7 @@
   <developers>
     <developer>
       <id>tdunning</id>
-      <name>Ted Dunning</name>
+      <name>Ted Dunning	</name>
       <email>tdunning@apache.org</email>
       <timezone>-8</timezone>
     </developer>
@@ -253,95 +254,62 @@
         <email>eolivelli@apache.org</email>
         <timezone>+1</timezone>
     </developer>
-    <developer>
-      <id>nkalmar</id>
-      <name>Norbert Kalmar</name>
-      <email>nkalmar@apache.org</email>
-      <timezone>+1</timezone>
-    </developer>
-    <developer>
-      <id>enixon</id>
-      <name>Brian Nixon</name>
-      <email>enixon@apache.org</email>
-      <timezone>-8</timezone>
-    </developer>
-    <developer>
-      <id>symat</id>
-      <name>Mate Szalay-Beko</name>
-      <email>symat@apache.org</email>
-      <timezone>+1</timezone>
-    </developer>
-    <developer>
-      <id>ddiederen</id>
-      <name>Damien Diederen</name>
-      <email>ddiederen@apache.org</email>
-      <timezone>Europe/Berlin</timezone>
-    </developer>
-    <developer>
-      <id>maoling</id>
-      <name>Ling Mao</name>
-      <email>maoling@apache.org</email>
-      <timezone>+8</timezone>
-    </developer>
   </developers>
 
   <profiles>
     <profile>
       <id>full-build</id>
       <modules>
-        <module>zookeeper-contrib</module>
-        <!-- zookeeper-it needed by fatjar contrib -->
         <module>zookeeper-it</module>
+        <module>zookeeper-contrib</module>
       </modules>
     </profile>
     <profile>
-      <!-- fatjar only profile; zookeeper-contrib will activate the fatjar in its pom -->
       <id>fatjar</id>
       <modules>
-        <module>zookeeper-contrib</module>
-        <!-- zookeeper-it needed by fatjar contrib -->
         <module>zookeeper-it</module>
+        <module>zookeeper-contrib</module>
       </modules>
     </profile>
     <profile>
-        <id>apache-release</id>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.apache.apache.resources</groupId>
-                            <artifactId>apache-source-release-assembly-descriptor</artifactId>
-                            <version>1.0.6</version>
-                        </dependency>
-                    </dependencies>
-                    <executions>
-                        <execution>
-                            <id>source-release-assembly-tar-gz</id>
-                            <phase>initialize</phase>
-                            <goals>
-                                <goal>single</goal>
-                            </goals>
-                            <configuration>
-                                <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                <descriptorRefs>
-                                    <!-- defined in Apache Parent Pom -->
-                                    <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
-                                </descriptorRefs>
-                                <finalName>apache-zookeeper-${project.version}</finalName>
-                                <appendAssemblyId>false</appendAssemblyId>
-                                <formats>
-                                    <format>tar.gz</format>
-                                </formats>
-                                <tarLongFileMode>posix</tarLongFileMode>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
+      <id>apache-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.apache.resources</groupId>
+                <artifactId>apache-source-release-assembly-descriptor</artifactId>
+                <version>1.0.6</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>source-release-assembly-tar-gz</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                  <descriptorRefs>
+                    <!-- defined in Apache Parent Pom -->
+                    <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
+                  </descriptorRefs>
+                  <finalName>apache-zookeeper-${project.version}</finalName>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <formats>
+                    <format>tar.gz</format>
+                  </formats>
+                  <tarLongFileMode>posix</tarLongFileMode>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>m2e</id>
@@ -373,7 +341,7 @@
                         </goals>
                       </pluginExecutionFilter>
                       <action>
-                        <ignore />
+                        <ignore/>
                       </action>
                     </pluginExecution>
                     <pluginExecution>
@@ -386,7 +354,7 @@
                         </goals>
                       </pluginExecutionFilter>
                       <action>
-                        <ignore />
+                        <ignore/>
                       </action>
                     </pluginExecution>
                     <pluginExecution>
@@ -399,7 +367,7 @@
                         </goals>
                       </pluginExecutionFilter>
                       <action>
-                        <ignore />
+                        <ignore/>
                       </action>
                     </pluginExecution>
                     <pluginExecution>
@@ -412,7 +380,7 @@
                         </goals>
                       </pluginExecutionFilter>
                       <action>
-                        <ignore />
+                        <ignore/>
                       </action>
                     </pluginExecution>
                     <pluginExecution>
@@ -425,7 +393,7 @@
                         </goals>
                       </pluginExecutionFilter>
                       <action>
-                        <ignore />
+                        <ignore/>
                       </action>
                     </pluginExecution>
                   </pluginExecutions>
@@ -445,57 +413,151 @@
         <maven.compiler.release>8</maven.compiler.release>
       </properties>
     </profile>
+    <profile>
+      <id>coverage</id>
+      <activation>
+        <property>
+          <name>coverage</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>chiacchius</sonar.organization>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.jacoco</groupId>
+          <artifactId>org.jacoco.agent</artifactId>
+          <classifier>runtime</classifier>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
   </profiles>
+
 
   <properties>
     <!-- maven properties -->
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <dependency.locations.enabled>false</dependency.locations.enabled>
+    <redirectTestOutputToFile>true</redirectTestOutputToFile>
     <surefire.version>2.22.1</surefire.version>
 
     <surefire-forkcount>8</surefire-forkcount>
     <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
     <!-- dependency versions -->
-    <slf4j.version>1.7.30</slf4j.version>
-    <audience-annotations.version>0.12.0</audience-annotations.version>
+    <arquillian-cube.version>1.18.2</arquillian-cube.version>
+    <slf4j.version>1.7.25</slf4j.version>
+    <audience-annotations.version>0.5.0</audience-annotations.version>
     <jmockit.version>1.48</jmockit.version>
-    <junit.version>5.6.2</junit.version>
+    <junit.version>4.12</junit.version>
     <junit-platform.version>1.6.2</junit-platform.version>
     <log4j.version>1.2.17</log4j.version>
-    <mockito.version>3.6.28</mockito.version>
-    <hamcrest.version>2.2</hamcrest.version>
-    <commons-cli.version>1.4</commons-cli.version>
+    <mockito.version>2.27.0</mockito.version>
+    <hamcrest.version>1.3</hamcrest.version>
+    <commons-cli.version>1.2</commons-cli.version>
+    <jacoco-maven-plugin.version>0.8.0</jacoco-maven-plugin.version>
+    <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
+    <maven-assembly-plugin.version>3.1.0</maven-assembly-plugin.version>
+    <maven-checkstyle-plugin.version>3.0.0</maven-checkstyle-plugin.version>
+    <maven-clean-plugin.version>2.5</maven-clean-plugin.version>
+    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+    <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
+    <maven-deploy-plugin.version>2.7</maven-deploy-plugin.version>
+    <maven-install-plugin.version>2.5.1</maven-install-plugin.version>
+    <maven-jar-plugin.version>2.4</maven-jar-plugin.version>
+    <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
+    <maven-shade-plugin.version>3.2.0</maven-shade-plugin.version>
+    <maven-source-plugin.version>2.2.1</maven-source-plugin.version>
     <netty.version>4.1.63.Final</netty.version>
     <jetty.version>9.4.39.v20210325</jetty.version>
     <jackson.version>2.10.5.1</jackson.version>
+    <json.version>1.1.1</json.version>
     <jline.version>2.14.6</jline.version>
-    <snappy.version>1.1.7.7</snappy.version>
+    <puppycrawl.checkstyle.version>6.19</puppycrawl.checkstyle.version>
+    <snappy.version>1.1.7</snappy.version>
     <kerby.version>2.0.0</kerby.version>
     <bouncycastle.version>1.60</bouncycastle.version>
-    <commons-collections.version>4.4</commons-collections.version>
-    <dropwizard.version>4.1.12.1</dropwizard.version>
+    <commons-collections.version>3.2.2</commons-collections.version>
+    <dropwizard.version>3.2.5</dropwizard.version>
     <spotbugsannotations.version>4.0.2</spotbugsannotations.version>
-    <checkstyle.version>8.39</checkstyle.version>
+    <checkstyle.version>8.17</checkstyle.version>
     <enforcer.version>3.0.0-M3</enforcer.version>
 
-    <!-- parameters to pass to C client build -->
+    <!-- parameter to pass to C client build -->
     <c-client-openssl>yes</c-client-openssl>
-    <c-client-sasl>yes</c-client-sasl>
+
+    <sonar.projectKey>chiacchius:${project.groupId}:${project.artifactId}</sonar.projectKey>
+    <sonar.links.homepage>https://github.com/chiacchius/zookeeper</sonar.links.homepage>
+    <sonar.links.ci>https://travis-ci.com/github/chiacchius/zookeeper</sonar.links.ci>
+    <sonar.links.scm>https://github.com/chiacchius/zookeeper</sonar.links.scm>
+    <sonar.links.issue>https://github.com/chiacchius/zookeeper/issues</sonar.links.issue>
+    <aggregate.report.dir>tests/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
+    <sonar.projectKey>chiacchius_zookeeper</sonar.projectKey>
+    <sonar.moduleKey>${artifactId}</sonar.moduleKey>
 
   </properties>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-runner</artifactId>
+        <version>${junit-platform.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
+        <artifactId>hamcrest-all</artifactId>
         <version>${hamcrest.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-collections4</artifactId>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
         <version>${commons-collections.version}</version>
       </dependency>
       <dependency>
@@ -582,33 +644,6 @@
         <version>${jmockit.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-params</artifactId>
-        <version>${junit.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-runner</artifactId>
-        <version>${junit-platform.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.vintage</groupId>
-        <artifactId>junit-vintage-engine</artifactId>
-        <version>${junit.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${mockito.version}</version>
@@ -634,11 +669,6 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-client</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${dropwizard.version}</version>
@@ -653,6 +683,11 @@
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.googlecode.json-simple</groupId>
+        <artifactId>json-simple</artifactId>
+        <version>${json.version}</version>
       </dependency>
       <dependency>
         <groupId>jline</groupId>
@@ -674,28 +709,61 @@
     </dependencies>
   </dependencyManagement>
 
+
   <build>
     <pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <configuration>
-             <showWarnings>true</showWarnings>
-             <compilerArgs>
-               <compilerArg>-Werror</compilerArg>
-               <compilerArg>-Xlint:deprecation</compilerArg>
-               <compilerArg>-Xlint:unchecked</compilerArg>
-               <compilerArg>-Xlint:-options</compilerArg>
-               <compilerArg>-Xdoclint:-missing</compilerArg>
-               <!-- https://issues.apache.org/jira/browse/MCOMPILER-205 -->
-               <compilerArg>-Xpkginfo:always</compilerArg>
-              </compilerArgs>
-            </configuration>
+          <version>${maven-compiler-plugin.version}</version>
+          <executions>
+            <execution>
+              <phase>verify</phase>
+            </execution>
+          </executions>
         </plugin>
+        <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>3.7.0.1746</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.4</version>
+        </plugin>
+        <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${maven-checkstyle-plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <encoding>UTF-8</encoding>
+          <consoleOutput>true</consoleOutput>
+          <failOnViolation>true</failOnViolation>
+          <includeResources>false</includeResources>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>checkstyle</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
+          <version>3.1.0</version>
           <configuration>
             <archive>
               <manifestEntries>
@@ -707,13 +775,13 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.0.1</version>
           <configuration>
-            <quiet>true</quiet>
             <doclint>none</doclint>
           </configuration>
         </plugin>
@@ -725,6 +793,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
+          <version>2.5.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -735,17 +804,19 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
-              <trimStackTrace>false</trimStackTrace>
-              <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
+            <trimStackTrace>false</trimStackTrace>
+            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
           </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.8</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -756,9 +827,6 @@
           <groupId>com.github.koraktor</groupId>
           <artifactId>mavanagaiata</artifactId>
           <version>0.9.4</version>
-          <configuration>
-            <skipNoGit>true</skipNoGit>
-          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -791,12 +859,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.0</version>
           <dependencies>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
               <artifactId>checkstyle</artifactId>
-              <version>${checkstyle.version}</version>
+              <version>${puppycrawl.checkstyle.version}</version>
             </dependency>
           </dependencies>
           <configuration>
@@ -809,6 +877,15 @@
             <includeTestResources>false</includeTestResources>
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
           </configuration>
+          <executions>
+            <execution>
+              <id>checkstyle</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <!-- we don't need this plugin-->
         <plugin>
@@ -861,11 +938,22 @@
         </executions>
       </plugin>
       <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.1</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+        </plugin>
+
+
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>set-hostname-property</id>
             <phase>validate</phase>
             <goals>
               <goal>run</goal>
@@ -989,7 +1077,6 @@
             <exclude>src/main/resources/markdown/skin/*</exclude>
             <exclude>src/main/resources/markdown/html/*</exclude>
             <exclude>src/main/resources/markdown/images/*</exclude>
-            <exclude>**/src/test/resources/embedded/*.conf</exclude>
             <!-- contrib -->
             <exclude>**/JMX-RESOURCES</exclude>
             <exclude>**/src/main/resources/mainClasses</exclude>
@@ -1018,12 +1105,8 @@
           <inherited>false</inherited>
           <configuration>
             <!-- update the version inside the C sources -->
-            <preparationGoals>clean verify -DskipTests antrun:run@replace-cclient-files-during-release scm:add@add-cclient-files-during-release scm:checkin@commit-cclient-files-during-release</preparationGoals>
-            <completionGoals>clean verify -DskipTests antrun:run@replace-cclient-files-during-release scm:add@add-cclient-files-during-release scm:checkin@commit-cclient-files-during-release</completionGoals>
-            <pushChanges>false</pushChanges>
-            <localCheckout>true</localCheckout>
-            <autoVersionSubmodules>true</autoVersionSubmodules>
-            <tagNameFormat>release-@{project.version}</tagNameFormat>
+            <preparationGoals>clean install -DskipTests antrun:run@replace-cclient-files-during-release scm:add@add-cclient-files-during-release scm:checkin@commit-cclient-files-during-release</preparationGoals>
+            <completionGoals>clean install -DskipTests antrun:run@replace-cclient-files-during-release scm:add@add-cclient-files-during-release scm:checkin@commit-cclient-files-during-release</completionGoals>
           </configuration>
         </plugin>
         <plugin>
@@ -1095,25 +1178,9 @@
               </rules>
             </configuration>
           </execution>
-          <execution>
-            <id>banned-json-simple</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <excludes>
-                    <exclude>com.googlecode.json-simple:json-simple</exclude>
-                  </excludes>
-                  <searchTransitive>false</searchTransitive>
-                  <message>We don't use json-simple any more, so do not depend on it directly.</message>
-                </bannedDependencies>
-              </rules>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
+
     </plugins>
     <resources>
       <resource>
@@ -1125,6 +1192,8 @@
     </resources>
   </build>
 
+
+
   <reporting>
     <plugins>
       <plugin>
@@ -1133,5 +1202,7 @@
       </plugin>
     </plugins>
   </reporting>
+
+
 
 </project>

@@ -39,7 +39,7 @@ public class JBoolean extends JType {
     }
 
     public String genJavaHashCode(String fname) {
-        return "     ret = java.lang.Boolean.hashCode(" + fname + ");\n";
+        return "     ret = (" + fname + ")?0:1;\n";
     }
 
     String genCsharpHashCode(String fname) {

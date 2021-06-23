@@ -20,9 +20,10 @@ package org.apache.zookeeper.cli;
 
 import java.util.Arrays;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.Parser;
+import org.apache.commons.cli.PosixParser;
 import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.KeeperException;
 
@@ -49,7 +50,7 @@ public class AddWatchCommand extends CliCommand {
 
     @Override
     public CliCommand parse(String[] cmdArgs) throws CliParseException {
-        DefaultParser parser = new DefaultParser();
+        Parser parser = new PosixParser();
         try {
             cl = parser.parse(options, cmdArgs);
         } catch (ParseException ex) {

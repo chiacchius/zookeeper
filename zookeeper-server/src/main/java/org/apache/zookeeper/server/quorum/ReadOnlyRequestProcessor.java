@@ -43,7 +43,7 @@ public class ReadOnlyRequestProcessor extends ZooKeeperCriticalThread implements
 
     private final LinkedBlockingQueue<Request> queuedRequests = new LinkedBlockingQueue<Request>();
 
-    private volatile boolean finished = false;
+    private boolean finished = false;
 
     private final RequestProcessor nextProcessor;
 
@@ -61,11 +61,11 @@ public class ReadOnlyRequestProcessor extends ZooKeeperCriticalThread implements
                 Request request = queuedRequests.take();
 
                 // log request
+                long traceMask = ZooTrace.CLIENT_REQUEST_TRACE_MASK;
+                if (request.type == OpCode.ping) {
+                    traceMask = ZooTrace.CLIENT_PING_TRACE_MASK;
+                }
                 if (LOG.isTraceEnabled()) {
-                    long traceMask = ZooTrace.CLIENT_REQUEST_TRACE_MASK;
-                    if (request.type == OpCode.ping) {
-                        traceMask = ZooTrace.CLIENT_PING_TRACE_MASK;
-                    }
                     ZooTrace.logRequest(LOG, traceMask, 'R', request, "");
                 }
                 if (Request.requestOfDeath == request) {
@@ -86,14 +86,16 @@ public class ReadOnlyRequestProcessor extends ZooKeeperCriticalThread implements
                 case OpCode.setACL:
                 case OpCode.multi:
                 case OpCode.check:
-                    sendErrorResponse(request);
-                    continue;
-                case OpCode.closeSession:
-                case OpCode.createSession:
-                    if (!request.isLocalSession()) {
-                        sendErrorResponse(request);
-                        continue;
+                    ReplyHeader hdr = new ReplyHeader(
+                        request.cxid,
+                        zks.getZKDatabase().getDataTreeLastProcessedZxid(),
+                        Code.NOTREADONLY.intValue());
+                    try {
+                        request.cnxn.sendResponse(hdr, null, null);
+                    } catch (IOException e) {
+                        LOG.error("IO exception while sending response", e);
                     }
+                    continue;
                 }
 
                 // proceed to the next processor
@@ -105,18 +107,6 @@ public class ReadOnlyRequestProcessor extends ZooKeeperCriticalThread implements
             handleException(this.getName(), e);
         }
         LOG.info("ReadOnlyRequestProcessor exited loop!");
-    }
-
-    private void sendErrorResponse(Request request) {
-        ReplyHeader hdr = new ReplyHeader(
-                request.cxid,
-                zks.getZKDatabase().getDataTreeLastProcessedZxid(),
-                Code.NOTREADONLY.intValue());
-        try {
-            request.cnxn.sendResponse(hdr, null, null);
-        } catch (IOException e) {
-            LOG.error("IO exception while sending response", e);
-        }
     }
 
     @Override

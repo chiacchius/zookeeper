@@ -18,7 +18,6 @@
 
 package org.apache.zookeeper;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -53,7 +52,7 @@ public class ServerAdminClient {
             byte[] resBytes = new byte[4];
 
             int rc = is.read(resBytes);
-            String retv = new String(resBytes, UTF_8);
+            String retv = new String(resBytes);
             System.out.println("rc=" + rc + " retv=" + retv);
         } catch (IOException e) {
             LOG.warn("Unexpected exception", e);
@@ -87,7 +86,7 @@ public class ServerAdminClient {
             byte[] resBytes = new byte[1024];
 
             int rc = is.read(resBytes);
-            String retv = new String(resBytes, UTF_8);
+            String retv = new String(resBytes);
             System.out.println("rc=" + rc + " retv=" + retv);
         } catch (IOException e) {
             LOG.warn("Unexpected exception", e);
@@ -121,7 +120,7 @@ public class ServerAdminClient {
             byte[] resBytes = new byte[1024];
 
             int rc = is.read(resBytes);
-            String retv = new String(resBytes, UTF_8);
+            String retv = new String(resBytes);
             System.out.println("rc=" + rc + " retv=" + retv);
         } catch (IOException e) {
             LOG.warn("Unexpected exception", e);
@@ -154,7 +153,7 @@ public class ServerAdminClient {
             byte[] resBytes = new byte[4];
 
             int rc = is.read(resBytes);
-            String retv = new String(resBytes, UTF_8);
+            String retv = new String(resBytes);
             System.out.println("rc=" + rc + " retv=" + retv);
         } catch (IOException e) {
             LOG.warn("Unexpected exception", e);

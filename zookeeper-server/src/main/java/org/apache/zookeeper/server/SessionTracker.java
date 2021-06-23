@@ -138,14 +138,4 @@ public interface SessionTracker {
     long getLocalSessionCount();
 
     boolean isLocalSessionsEnabled();
-
-    /**
-     * Get a set of global session IDs
-     */
-    Set<Long> globalSessions();
-
-    /**
-     * Get a set of local session IDs
-     */
-    Set<Long> localSessions();
 }

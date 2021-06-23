@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -41,7 +40,6 @@ import javax.security.sasl.SaslException;
 import org.apache.jute.BinaryInputArchive;
 import org.apache.jute.BinaryOutputArchive;
 import org.apache.zookeeper.ZooDefs.OpCode;
-import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ServerMetrics;
 import org.apache.zookeeper.server.TxnLogProposalIterator;
@@ -51,7 +49,6 @@ import org.apache.zookeeper.server.ZooTrace;
 import org.apache.zookeeper.server.quorum.Leader.Proposal;
 import org.apache.zookeeper.server.quorum.QuorumPeer.LearnerType;
 import org.apache.zookeeper.server.quorum.auth.QuorumAuthServer;
-import org.apache.zookeeper.server.util.ConfigUtils;
 import org.apache.zookeeper.server.util.MessageTracker;
 import org.apache.zookeeper.server.util.ZxidUtils;
 import org.slf4j.Logger;
@@ -66,22 +63,11 @@ public class LearnerHandler extends ZooKeeperThread {
 
     private static final Logger LOG = LoggerFactory.getLogger(LearnerHandler.class);
 
-    public static final String LEADER_CLOSE_SOCKET_ASYNC = "zookeeper.leader.closeSocketAsync";
-
-    public static final boolean closeSocketAsync = Boolean
-        .parseBoolean(ConfigUtils.getPropertyBackwardCompatibleWay(LEADER_CLOSE_SOCKET_ASYNC));
-
-    static {
-        LOG.info("{} = {}", LEADER_CLOSE_SOCKET_ASYNC, closeSocketAsync);
-    }
-
     protected final Socket sock;
 
     public Socket getSocket() {
         return sock;
     }
-
-    AtomicBoolean sockBeingClosed = new AtomicBoolean(false);
 
     final LearnerMaster learnerMaster;
 
@@ -291,8 +277,11 @@ public class LearnerHandler extends ZooKeeperThread {
             }
         } catch (IOException e) {
             LOG.error("Server failed to authenticate quorum learner, addr: {}, closing connection", sock.getRemoteSocketAddress(), e);
-            closeSocket();
-
+            try {
+                sock.close();
+            } catch (IOException ie) {
+                LOG.error("Exception while closing socket", ie);
+            }
             throw new SaslException("Authentication failure: " + e.getMessage());
         }
 
@@ -326,6 +315,7 @@ public class LearnerHandler extends ZooKeeperThread {
      * @throws InterruptedException
      */
     private void sendPackets() throws InterruptedException {
+        long traceMask = ZooTrace.SERVER_PACKET_TRACE_MASK;
         while (true) {
             try {
                 QuorumPacket p;
@@ -349,15 +339,13 @@ public class LearnerHandler extends ZooKeeperThread {
                     // Packet of death!
                     break;
                 }
-
+                if (p.getType() == Leader.PING) {
+                    traceMask = ZooTrace.SERVER_PING_TRACE_MASK;
+                }
                 if (p.getType() == Leader.PROPOSAL) {
                     syncLimitCheck.updateProposal(p.getZxid(), System.nanoTime());
                 }
                 if (LOG.isTraceEnabled()) {
-                    long traceMask = ZooTrace.SERVER_PACKET_TRACE_MASK;
-                    if (p.getType() == Leader.PING) {
-                        traceMask = ZooTrace.SERVER_PING_TRACE_MASK;
-                    }
                     ZooTrace.logQuorumPacket(LOG, traceMask, 'o', p);
                 }
 
@@ -369,11 +357,17 @@ public class LearnerHandler extends ZooKeeperThread {
                 packetsSent.incrementAndGet();
                 messageTracker.trackSent(p.getType());
             } catch (IOException e) {
-                LOG.error("Exception while sending packets in LearnerHandler", e);
-                // this will cause everything to shutdown on
-                // this learner handler and will help notify
-                // the learner/observer instantaneously
-                closeSocket();
+                if (!sock.isClosed()) {
+                    LOG.warn("Unexpected exception at {}", this, e);
+                    try {
+                        // this will cause everything to shutdown on
+                        // this learner handler and will help notify
+                        // the learner/observer instantaneously
+                        sock.close();
+                    } catch (IOException ie) {
+                        LOG.warn("Error closing socket for handler {}", this, ie);
+                    }
+                }
                 break;
             }
         }
@@ -555,7 +549,7 @@ public class LearnerHandler extends ZooKeeperThread {
             boolean needSnap = syncFollower(peerLastZxid, learnerMaster);
 
             // syncs between followers and the leader are exempt from throttling because it
-            // is important to keep the state of quorum servers up-to-date. The exempted syncs
+            // is importatnt to keep the state of quorum servers up-to-date. The exempted syncs
             // are counted as concurrent syncs though
             boolean exemptFromThrottle = getLearnerType() != LearnerType.OBSERVER;
             /* if we are not truncating or sending a diff just send a snapshot */
@@ -656,11 +650,11 @@ public class LearnerHandler extends ZooKeeperThread {
                 ia.readRecord(qp, "packet");
                 messageTracker.trackReceived(qp.getType());
 
+                long traceMask = ZooTrace.SERVER_PACKET_TRACE_MASK;
+                if (qp.getType() == Leader.PING) {
+                    traceMask = ZooTrace.SERVER_PING_TRACE_MASK;
+                }
                 if (LOG.isTraceEnabled()) {
-                    long traceMask = ZooTrace.SERVER_PACKET_TRACE_MASK;
-                    if (qp.getType() == Leader.PING) {
-                        traceMask = ZooTrace.SERVER_PING_TRACE_MASK;
-                    }
                     ZooTrace.logQuorumPacket(LOG, traceMask, 'i', qp);
                 }
                 tickOfNextAckDeadline = learnerMaster.getTickOfNextAckDeadline();
@@ -716,8 +710,16 @@ public class LearnerHandler extends ZooKeeperThread {
                 }
             }
         } catch (IOException e) {
-            LOG.error("Unexpected exception in LearnerHandler: ", e);
-            closeSocket();
+            if (sock != null && !sock.isClosed()) {
+                LOG.error("Unexpected exception causing shutdown while sock still open", e);
+                //close the socket to make sure the
+                //other side can see it being close
+                try {
+                    sock.close();
+                } catch (IOException ie) {
+                    // do nothing
+                }
+            }
         } catch (InterruptedException e) {
             LOG.error("Unexpected exception in LearnerHandler.", e);
         } catch (SyncThrottleException e) {
@@ -1048,9 +1050,13 @@ public class LearnerHandler extends ZooKeeperThread {
         } catch (InterruptedException e) {
             LOG.warn("Ignoring unexpected exception", e);
         }
-
-        closeSocket();
-
+        try {
+            if (sock != null && !sock.isClosed()) {
+                sock.close();
+            }
+        } catch (IOException e) {
+            LOG.warn("Ignoring unexpected exception during socket close", e);
+        }
         this.interrupt();
         learnerMaster.removeLearnerHandler(this);
         learnerMaster.unregisterLearnerHandlerBean(this);
@@ -1138,6 +1144,7 @@ public class LearnerHandler extends ZooKeeperThread {
 
     /**
      * For testing, return packet queue
+     * @return
      */
     public Queue<QuorumPacket> getQueuedPackets() {
         return queuedPackets;
@@ -1150,33 +1157,4 @@ public class LearnerHandler extends ZooKeeperThread {
         needOpPacket = value;
     }
 
-    void closeSocket() {
-        if (sock != null && !sock.isClosed() && sockBeingClosed.compareAndSet(false, true)) {
-            if (closeSocketAsync) {
-                LOG.info("Asynchronously closing socket to learner {}.", getSid());
-                closeSockAsync();
-            } else {
-                LOG.info("Synchronously closing socket to learner {}.", getSid());
-                closeSockSync();
-            }
-        }
-    }
-
-    void closeSockAsync() {
-        final Thread closingThread = new Thread(() -> closeSockSync(), "CloseSocketThread(sid:" + this.sid);
-        closingThread.setDaemon(true);
-        closingThread.start();
-    }
-
-    void closeSockSync() {
-        try {
-            if (sock != null) {
-                long startTime = Time.currentElapsedTime();
-                sock.close();
-                ServerMetrics.getMetrics().SOCKET_CLOSING_TIME.add(Time.currentElapsedTime() - startTime);
-            }
-        } catch (IOException e) {
-            LOG.warn("Ignoring error closing connection to learner {}", getSid(), e);
-        }
-    }
 }

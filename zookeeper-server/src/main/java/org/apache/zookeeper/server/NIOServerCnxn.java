@@ -18,7 +18,6 @@
 
 package org.apache.zookeeper.server;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -70,7 +69,7 @@ public class NIOServerCnxn extends ServerCnxn {
 
     private final ByteBuffer lenBuffer = ByteBuffer.allocate(4);
 
-    protected ByteBuffer incomingBuffer = lenBuffer;
+    private ByteBuffer incomingBuffer = lenBuffer;
 
     private final Queue<ByteBuffer> outgoingBuffers = new LinkedBlockingQueue<ByteBuffer>();
 
@@ -81,11 +80,6 @@ public class NIOServerCnxn extends ServerCnxn {
      * this session is no longer active, the ephemeral nodes will go away.
      */
     private long sessionId;
-
-    /**
-     * Client socket option for TCP keepalive
-     */
-    private final boolean clientTcpKeepAlive = Boolean.getBoolean("zookeeper.clientTcpKeepAlive");
 
     public NIOServerCnxn(ZooKeeperServer zk, SocketChannel sock, SelectionKey sk, NIOServerCnxnFactory factory, SelectorThread selectorThread) throws IOException {
         super(zk);
@@ -99,7 +93,6 @@ public class NIOServerCnxn extends ServerCnxn {
         sock.socket().setTcpNoDelay(true);
         /* set socket linger to false, so that socket close does not block */
         sock.socket().setSoLinger(false, -1);
-        sock.socket().setKeepAlive(clientTcpKeepAlive);
         InetAddress addr = ((InetSocketAddress) sock.socket().getRemoteSocketAddress()).getAddress();
         addAuthInfo(new Id("ip", addr.getHostAddress()));
         this.sessionTimeout = factory.sessionlessCnxnTimeout;
@@ -382,7 +375,7 @@ public class NIOServerCnxn extends ServerCnxn {
         }
     }
 
-    protected void readRequest() throws IOException {
+    private void readRequest() throws IOException {
         zkServer.processPacket(this, incomingBuffer);
     }
 
@@ -443,7 +436,7 @@ public class NIOServerCnxn extends ServerCnxn {
          */
         private void checkFlush(boolean force) {
             if ((force && sb.length() > 0) || sb.length() > 2048) {
-                sendBufferSync(ByteBuffer.wrap(sb.toString().getBytes(UTF_8)));
+                sendBufferSync(ByteBuffer.wrap(sb.toString().getBytes()));
                 // clear our internal buffer
                 sb.setLength(0);
             }
@@ -545,10 +538,7 @@ public class NIOServerCnxn extends ServerCnxn {
             return false;
         }
         if (len < 0 || len > BinaryInputArchive.maxBuffer) {
-            throw new IOException("Len error. "
-                    + "A message from " +  this.getRemoteSocketAddress() + " with advertised length of " + len
-                    + " is either a malformed message or too large to process"
-                    + " (length is greater than jute.maxbuffer=" + BinaryInputArchive.maxBuffer + ")");
+            throw new IOException("Len error " + len);
         }
         if (!isZKServerRunning()) {
             throw new IOException("ZooKeeperServer not running");
@@ -557,6 +547,13 @@ public class NIOServerCnxn extends ServerCnxn {
         zkServer.checkRequestSizeWhenReceivingMessage(len);
         incomingBuffer = ByteBuffer.allocate(len);
         return true;
+    }
+
+    /**
+     * @return true if the server is running, false otherwise.
+     */
+    boolean isZKServerRunning() {
+        return zkServer != null && zkServer.isRunning();
     }
 
     /*
@@ -669,18 +666,13 @@ public class NIOServerCnxn extends ServerCnxn {
     private static final ByteBuffer packetSentinel = ByteBuffer.allocate(0);
 
     @Override
-    public int sendResponse(ReplyHeader h, Record r, String tag, String cacheKey, Stat stat, int opCode) {
-        int responseSize = 0;
+    public void sendResponse(ReplyHeader h, Record r, String tag, String cacheKey, Stat stat, int opCode) {
         try {
-            ByteBuffer[] bb = serialize(h, r, tag, cacheKey, stat, opCode);
-            responseSize = bb[0].getInt();
-            bb[0].rewind();
-            sendBuffer(bb);
+            sendBuffer(serialize(h, r, tag, cacheKey, stat, opCode));
             decrOutstandingAndCheckThrottle(h);
         } catch (Exception e) {
             LOG.warn("Unexpected exception. Destruction averted.", e);
         }
-        return responseSize;
     }
 
     /*
@@ -704,8 +696,7 @@ public class NIOServerCnxn extends ServerCnxn {
         // The last parameter OpCode here is used to select the response cache.
         // Passing OpCode.error (with a value of -1) means we don't care, as we don't need
         // response cache on delivering watcher events.
-        int responseSize = sendResponse(h, e, "notification", null, null, ZooDefs.OpCode.error);
-        ServerMetrics.getMetrics().WATCH_BYTES.add(responseSize);
+        sendResponse(h, e, "notification", null, null, ZooDefs.OpCode.error);
     }
 
     /*

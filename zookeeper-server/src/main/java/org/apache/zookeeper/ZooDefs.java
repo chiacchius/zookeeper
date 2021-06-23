@@ -93,8 +93,6 @@ public class ZooDefs {
 
         int addWatch = 106;
 
-        int whoAmI = 107;
-
         int createSession = -10;
 
         int closeSession = -11;
