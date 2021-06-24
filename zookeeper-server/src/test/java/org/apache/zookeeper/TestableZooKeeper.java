@@ -35,7 +35,7 @@ public class TestableZooKeeper extends ZooKeeperAdmin {
         super(host, sessionTimeout, watcher);
     }
 
-    class TestableClientCnxn extends ClientCnxn {
+    /*class TestableClientCnxn extends ClientCnxn {
 
         TestableClientCnxn(
             String chrootPath,
@@ -66,7 +66,7 @@ public class TestableZooKeeper extends ZooKeeperAdmin {
 
     }
 
-    protected ClientCnxn createConnection(
+    /*protected ClientCnxn createConnection(
         String chrootPath,
         HostProvider hostProvider,
         int sessionTimeout,
@@ -82,15 +82,15 @@ public class TestableZooKeeper extends ZooKeeperAdmin {
             watcher,
             clientCnxnSocket,
             canBeReadOnly);
-    }
+    }*/
 
-    public void setXid(int xid) {
+   /* public void setXid(int xid) {
         ((TestableClientCnxn) cnxn).setXid(xid);
     }
 
     public int checkXid() {
         return ((TestableClientCnxn) cnxn).checkXid();
-    }
+    }*/
 
     @Override
     public List<String> getChildWatches() {
@@ -111,19 +111,19 @@ public class TestableZooKeeper extends ZooKeeperAdmin {
      * Cause this ZooKeeper object to disconnect from the server. It will then
      * later attempt to reconnect.
      */
-    public void testableConnloss() throws IOException {
+    /*public void testableConnloss() throws IOException {
         synchronized (cnxn) {
             cnxn.sendThread.testableCloseSocket();
         }
-    }
+    }*/
 
-    /**
+    /*
      * Cause this ZooKeeper object to stop receiving from the ZooKeeperServer
      * for the given number of milliseconds.
      * @param ms the number of milliseconds to pause.
      * @return true if the connection is paused, otherwise false
      */
-    public boolean pauseCnxn(final long ms) {
+    /*public boolean pauseCnxn(final long ms) {
         final CountDownLatch initiatedPause = new CountDownLatch(1);
         new Thread() {
             public void run() {
@@ -149,7 +149,7 @@ public class TestableZooKeeper extends ZooKeeperAdmin {
             e.printStackTrace();
             return false;
         }
-    }
+    }*/
 
     public SocketAddress testableLocalSocketAddress() {
         return super.testableLocalSocketAddress();
@@ -162,7 +162,7 @@ public class TestableZooKeeper extends ZooKeeperAdmin {
     /**
      * @return the last zxid as seen by the client session
      */
-    public long testableLastZxid() {
+   /* public long testableLastZxid() {
         return cnxn.getLastZxid();
     }
 
@@ -173,14 +173,14 @@ public class TestableZooKeeper extends ZooKeeperAdmin {
         WatchRegistration watchRegistration) throws InterruptedException {
         return cnxn.submitRequest(h, request, response, watchRegistration);
     }
-
+*/
     /** Testing only!!! Really!!!! This is only here to test when the client
      * disconnects from the server w/o sending a session disconnect (ie
      * ending the session cleanly). The server will eventually notice the
      * client is no longer pinging and will timeout the session.
      */
-    public void disconnect() {
+    /*public void disconnect() {
         cnxn.disconnect();
-    }
+    }*/
 
 }

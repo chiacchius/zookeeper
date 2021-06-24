@@ -24,7 +24,6 @@
     <groupId>org.apache.zookeeper</groupId>
     <artifactId>parent</artifactId>
     <version>3.6.3</version>
-    <relativePath>..</relativePath>
   </parent>
 
   <artifactId>zookeeper-assembly</artifactId>
@@ -53,6 +52,7 @@
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper-docs</artifactId>
       <version>${project.version}</version>
+      <type>pom</type>
     </dependency>
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
@@ -104,8 +104,8 @@
       <artifactId>jline</artifactId>
     </dependency>
     <dependency>
-       <groupId>io.dropwizard.metrics</groupId>
-       <artifactId>metrics-core</artifactId>
+      <groupId>io.dropwizard.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.xerial.snappy</groupId>
@@ -134,7 +134,7 @@
               <tarLongFileMode>posix</tarLongFileMode>
             </configuration>
           </execution>
-        <execution>
+          <execution>
             <id>lib-assembly</id>
             <phase>package</phase>
             <goals>
@@ -157,7 +157,7 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
         <configuration>
-            <skip>true</skip>
+          <skip>true</skip>
         </configuration>
       </plugin>
 

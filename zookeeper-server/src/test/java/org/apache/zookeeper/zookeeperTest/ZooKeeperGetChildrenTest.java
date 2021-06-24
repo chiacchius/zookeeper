@@ -1,6 +1,10 @@
-package org.apache.zookeeper;
+package org.apache.zookeeper.zookeeperTest;
 
 
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.cli.CliException;
 import org.apache.zookeeper.test.ClientBase;
 import org.junit.After;

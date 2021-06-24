@@ -31,6 +31,7 @@ import org.apache.zookeeper.metrics.impl.MetricsProviderBootstrap;
 import org.apache.zookeeper.server.admin.AdminServer;
 import org.apache.zookeeper.server.admin.AdminServer.AdminServerException;
 import org.apache.zookeeper.server.admin.AdminServerFactory;
+import org.apache.zookeeper.server.auth.ProviderRegistry;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog.DatadirException;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
@@ -130,6 +131,7 @@ public class ZooKeeperServerMain {
                 throw new IOException("Cannot boot MetricsProvider " + config.getMetricsProviderClassName(), error);
             }
             ServerMetrics.metricsProviderInitialized(metricsProvider);
+            ProviderRegistry.initialize();
             // Note that this thread isn't going to be doing anything else,
             // so rather than spawning another thread, we will just call
             // run() in this thread.
@@ -238,6 +240,28 @@ public class ZooKeeperServerMain {
     // VisibleForTesting
     ServerCnxnFactory getSecureCnxnFactory() {
         return secureCnxnFactory;
+    }
+
+    /**
+     * Shutdowns properly the service, this method is not a public API.
+     */
+    public void close() {
+        ServerCnxnFactory primaryCnxnFactory = this.cnxnFactory;
+        if (primaryCnxnFactory == null) {
+            // in case of pure TLS we can hook into secureCnxnFactory
+            primaryCnxnFactory = secureCnxnFactory;
+        }
+        if (primaryCnxnFactory == null || primaryCnxnFactory.getZooKeeperServer() == null) {
+            return;
+        }
+        ZooKeeperServerShutdownHandler zkShutdownHandler = primaryCnxnFactory.getZooKeeperServer().getZkShutdownHandler();
+        zkShutdownHandler.handle(ZooKeeperServer.State.SHUTDOWN);
+        try {
+            // ServerCnxnFactory will call the shutdown
+            primaryCnxnFactory.join();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }

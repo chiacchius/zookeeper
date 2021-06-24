@@ -230,6 +230,15 @@ public class FileTxnSnapLog {
     }
 
     /**
+     * whether to force the write of an initial snapshot after a leader election,
+     * to address ZOOKEEPER-3781 after upgrading from Zookeeper 3.4.x.
+     * @return true if an initial snapshot should be written even if not otherwise required, false otherwise.
+     */
+    public boolean shouldForceWriteInitialSnapshotAfterLeaderElection() {
+        return trustEmptySnapshot && getLastSnapshotInfo() == null;
+    }
+
+    /**
      * this function restores the server
      * database after reading from the
      * snapshots and transaction logs
@@ -566,7 +575,7 @@ public class FileTxnSnapLog {
      * file may contain transactions beyond given zxid.
      * @param zxid the zxid that contains logs greater than
      * zxid
-     * @return
+     * @return the snapshot logs which may contain transactions newer than the given zxid
      */
     public File[] getSnapshotLogs(long zxid) {
         return FileTxnLog.getLogFiles(dataDir.listFiles(), zxid);
@@ -611,14 +620,16 @@ public class FileTxnSnapLog {
      * @throws IOException
      */
     public void close() throws IOException {
-        if (txnLog != null) {
-            txnLog.close();
-            txnLog = null;
+        TxnLog txnLogToClose = txnLog;
+        if (txnLogToClose != null) {
+            txnLogToClose.close();
         }
-        if (snapLog != null) {
-            snapLog.close();
-            snapLog = null;
+        txnLog = null;
+        SnapShot snapSlogToClose = snapLog;
+        if (snapSlogToClose != null) {
+            snapSlogToClose.close();
         }
+        snapLog = null;
     }
 
     @SuppressWarnings("serial")

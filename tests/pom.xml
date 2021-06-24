@@ -8,7 +8,7 @@
         <version>3.6.3</version>
     </parent>
     <groupId>org.apache.zookeeper</groupId>
-    <artifactId>tests</artifactId>
+    <artifactId>tets</artifactId>
     <version>3.6.3</version>
     <name>tests</name>
     <url>http://maven.apache.org</url>
@@ -19,14 +19,14 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
         <!--
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper-compatibility-tests-curator</artifactId>
-            <version>3.8.0-SNAPSHOT</version>
+            <version>3.6.3</version>
         </dependency>
         -->
         <!--
@@ -38,22 +38,22 @@
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper-contrib-loggraph</artifactId>
-            <version>3.8.0-SNAPSHOT</version>
+            <version>3.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper-contrib-rest</artifactId>
-            <version>3.8.0-SNAPSHOT</version>
+            <version>3.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper-contrib-zooinspector</artifactId>
-            <version>3.8.0-SNAPSHOT</version>
+            <version>3.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper-it</artifactId>
-            <version>3.8.0-SNAPSHOT</version>
+            <version>3.6.3</version>
         </dependency>
         -->
         <dependency>
@@ -90,17 +90,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
-                <configuration>
-                    <!-- Jacoco prepare-agent builds some command-line params without -->
-                    <!-- which jacoco will not instrument. Hence it is important to add -->
-                    <!-- those command-line params here (${argLine} holds those params) -->
-                    <runOrder>random</runOrder>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

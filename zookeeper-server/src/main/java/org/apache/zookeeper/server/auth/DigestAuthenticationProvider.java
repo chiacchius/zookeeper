@@ -18,6 +18,7 @@
 
 package org.apache.zookeeper.server.auth;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.apache.zookeeper.KeeperException;
@@ -30,12 +31,36 @@ public class DigestAuthenticationProvider implements AuthenticationProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(DigestAuthenticationProvider.class);
 
+    private static final String DEFAULT_DIGEST_ALGORITHM = "SHA1";
+
+    public static final String DIGEST_ALGORITHM_KEY = "zookeeper.DigestAuthenticationProvider.digestAlg";
+
+    private static final String DIGEST_ALGORITHM = System.getProperty(DIGEST_ALGORITHM_KEY, DEFAULT_DIGEST_ALGORITHM);
+
+    static {
+        try {
+            //sanity check, pre-check the availability of the algorithm to avoid some unexpected exceptions in the runtime
+            generateDigest(DIGEST_ALGORITHM);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("don't support this ACL digest algorithm: " + DIGEST_ALGORITHM + " in the current environment");
+        }
+        LOG.info("ACL digest algorithm is: {}", DIGEST_ALGORITHM);
+    }
+
+    private static final String DIGEST_AUTH_ENABLED = "zookeeper.DigestAuthenticationProvider.enabled";
+
     /** specify a command line property with key of
      * "zookeeper.DigestAuthenticationProvider.superDigest"
      * and value of "super:&lt;base64encoded(SHA1(password))&gt;" to enable
      * super user access (i.e. acls disabled)
      */
     private static final String superDigest = System.getProperty("zookeeper.DigestAuthenticationProvider.superDigest");
+
+    public static boolean isEnabled() {
+        boolean enabled = Boolean.parseBoolean(System.getProperty(DIGEST_AUTH_ENABLED, "true"));
+        LOG.info("{} = {}", DIGEST_AUTH_ENABLED, enabled);
+        return enabled;
+    }
 
     public String getScheme() {
         return "digest";
@@ -88,8 +113,13 @@ public class DigestAuthenticationProvider implements AuthenticationProvider {
 
     public static String generateDigest(String idPassword) throws NoSuchAlgorithmException {
         String[] parts = idPassword.split(":", 2);
-        byte[] digest = MessageDigest.getInstance("SHA1").digest(idPassword.getBytes());
+        byte[] digest = digest(idPassword);
         return parts[0] + ":" + base64Encode(digest);
+    }
+
+    // @VisibleForTesting
+    public static byte[] digest(String idPassword) throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance(DIGEST_ALGORITHM).digest(idPassword.getBytes(UTF_8));
     }
 
     public KeeperException.Code handleAuthentication(ServerCnxn cnxn, byte[] authData) {

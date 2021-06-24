@@ -40,18 +40,18 @@
 
   <profiles>
     <profile>
-      <id>fatjar</id>
-      <modules>
-        <module>zookeeper-contrib-fatjar</module>
-      </modules>
-    </profile>
-    <profile>
       <id>full-build</id>
       <modules>
         <module>zookeeper-contrib-fatjar</module>
         <module>zookeeper-contrib-loggraph</module>
         <module>zookeeper-contrib-rest</module>
         <module>zookeeper-contrib-zooinspector</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>fatjar</id>
+      <modules>
+        <module>zookeeper-contrib-fatjar</module>
       </modules>
     </profile>
   </profiles>
@@ -63,43 +63,19 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <configuration>
-             <!-- no additional args for contrib -->
-             <compilerArgs>
-                 <compilerArg>-Xlint:none</compilerArg>
-             </compilerArgs>
-            </configuration>
+            <!-- no additional args for contrib -->
+            <compilerArgs>
+              <compilerArg>-Xlint:none</compilerArg>
+            </compilerArgs>
+          </configuration>
         </plugin>
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>3.1.0</version>
-          <dependencies>
-            <dependency>
-              <groupId>com.puppycrawl.tools</groupId>
-              <artifactId>checkstyle</artifactId>
-              <version>${checkstyle.version}</version>
-            </dependency>
-          </dependencies>
           <configuration>
             <configLocation>checkstyle-simple.xml</configLocation>
-            <suppressionsLocation>checkstyleSuppressions.xml</suppressionsLocation>
-            <encoding>UTF-8</encoding>
-            <consoleOutput>true</consoleOutput>
-            <failOnViolation>true</failOnViolation>
-            <includeResources>false</includeResources>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <includeTestResources>false</includeTestResources>
           </configuration>
-          <executions>
-            <execution>
-              <id>checkstyle</id>
-              <phase>validate</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
       </plugins>
     </pluginManagement>

@@ -24,7 +24,6 @@
     <groupId>org.apache.zookeeper</groupId>
     <artifactId>parent</artifactId>
     <version>3.6.3</version>
-    <relativePath>..</relativePath>
   </parent>
 
   <artifactId>zookeeper-metrics-providers</artifactId>

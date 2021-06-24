@@ -18,6 +18,7 @@
 
 package org.apache.zookeeper.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
@@ -171,7 +172,8 @@ public class NettyServerCnxn extends ServerCnxn {
         WatcherEvent e = event.getWrapper();
 
         try {
-            sendResponse(h, e, "notification");
+            int responseSize = sendResponse(h, e, "notification");
+            ServerMetrics.getMetrics().WATCH_BYTES.add(responseSize);
         } catch (IOException e1) {
             LOG.debug("Problem sending to {}", getRemoteSocketAddress(), e1);
             close();
@@ -179,15 +181,19 @@ public class NettyServerCnxn extends ServerCnxn {
     }
 
     @Override
-    public void sendResponse(ReplyHeader h, Record r, String tag,
+    public int sendResponse(ReplyHeader h, Record r, String tag,
                              String cacheKey, Stat stat, int opCode) throws IOException {
         // cacheKey and stat are used in caching, which is not
         // implemented here. Implementation example can be found in NIOServerCnxn.
         if (closingChannel || !channel.isOpen()) {
-            return;
+            return 0;
         }
-        sendBuffer(serialize(h, r, tag, cacheKey, stat, opCode));
+        ByteBuffer[] bb = serialize(h, r, tag, cacheKey, stat, opCode);
+        int responseSize = bb[0].getInt();
+        bb[0].rewind();
+        sendBuffer(bb);
         decrOutstandingAndCheckThrottle(h);
+        return responseSize;
     }
 
     @Override
@@ -228,7 +234,7 @@ public class NettyServerCnxn extends ServerCnxn {
          */
         private void checkFlush(boolean force) {
             if ((force && sb.length() > 0) || sb.length() > 2048) {
-                sendBuffer(ByteBuffer.wrap(sb.toString().getBytes()));
+                sendBuffer(ByteBuffer.wrap(sb.toString().getBytes(UTF_8)));
                 // clear our internal buffer
                 sb.setLength(0);
             }
@@ -514,8 +520,12 @@ public class NettyServerCnxn extends ServerCnxn {
                         if (len < 0 || len > BinaryInputArchive.maxBuffer) {
                             throw new IOException("Len error " + len);
                         }
+                        ZooKeeperServer zks = this.zkServer;
+                        if (zks == null || !zks.isRunning()) {
+                            throw new IOException("ZK down");
+                        }
                         // checkRequestSize will throw IOException if request is rejected
-                        zkServer.checkRequestSizeWhenReceivingMessage(len);
+                        zks.checkRequestSizeWhenReceivingMessage(len);
                         bb = ByteBuffer.allocate(len);
                     }
                 }

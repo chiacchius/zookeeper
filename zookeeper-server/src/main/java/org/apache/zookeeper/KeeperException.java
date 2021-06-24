@@ -148,6 +148,10 @@ public abstract class KeeperException extends Exception {
             return new SessionClosedRequireAuthException();
         case REQUESTTIMEOUT:
             return new RequestTimeoutException();
+        case QUOTAEXCEEDED:
+            return new QuotaExceededException();
+        case THROTTLEDOP:
+            return new ThrottledOpException();
         case OK:
         default:
             throw new IllegalArgumentException("Invalid exception code");
@@ -401,10 +405,17 @@ public abstract class KeeperException extends Exception {
         REQUESTTIMEOUT(-122),
         /** Attempts to perform a reconfiguration operation when reconfiguration feature is disabled. */
         RECONFIGDISABLED(-123),
-        /** The session has been closed by server because server requires client to do SASL authentication,
-         *  but client is not configured with SASL authentication or configuted with SASL but failed
+        /** The session has been closed by server because server requires client to do authentication
+         *  with configured authentication scheme at the server, but client is not configured with
+         *  required  authentication scheme or configured but authentication failed
          *  (i.e. wrong credential used.). */
-        SESSIONCLOSEDREQUIRESASLAUTH(-124);
+        SESSIONCLOSEDREQUIRESASLAUTH(-124),
+        /** Exceeded the quota that was set on the path.*/
+        QUOTAEXCEEDED(-125),
+        /** Operation was throttled and not executed at all. This error code indicates that zookeeper server
+         *  is under heavy load and can't process incoming requests at full speed; please retry with back off.
+         */
+        THROTTLEDOP (-127);
 
         private static final Map<Integer, Code> lookup = new HashMap<Integer, Code>();
 
@@ -495,6 +506,10 @@ public abstract class KeeperException extends Exception {
             return "Reconfig is disabled";
         case SESSIONCLOSEDREQUIRESASLAUTH:
             return "Session closed because client failed to authenticate";
+        case QUOTAEXCEEDED:
+            return "Quota has exceeded";
+        case THROTTLEDOP:
+            return "Op throttled due to high load";
         default:
             return "Unknown error " + code;
         }
@@ -940,4 +955,25 @@ public abstract class KeeperException extends Exception {
 
     }
 
+    /**
+     * @see Code#QUOTAEXCEEDED
+     */
+    @InterfaceAudience.Public
+    public static class QuotaExceededException extends KeeperException {
+        public QuotaExceededException() {
+            super(Code.QUOTAEXCEEDED);
+        }
+        public QuotaExceededException(String path) {
+            super(Code.QUOTAEXCEEDED, path);
+        }
+    }
+
+    /**
+     * @see Code#THROTTLEDOP
+     */
+    public static class ThrottledOpException extends KeeperException {
+        public ThrottledOpException() {
+            super(Code.THROTTLEDOP);
+        }
+    }
 }

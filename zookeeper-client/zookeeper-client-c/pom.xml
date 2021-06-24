@@ -24,35 +24,20 @@
     <groupId>org.apache.zookeeper</groupId>
     <artifactId>zookeeper-client</artifactId>
     <version>3.6.3</version>
-    <relativePath>..</relativePath>
   </parent>
 
   <artifactId>zookeeper-client-c</artifactId>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
   <name>Apache ZooKeeper - Client - C</name>
   <description>ZooKeeper c client</description>
 
-  <profiles>
-    <profile>
-      <id>c-test-coverage</id>
-      <properties>
-        <c-test-coverage-arg>--enable-gcov</c-test-coverage-arg>
-      </properties>
-    </profile>
-    <profile>
-      <id>no-c-test-coverage</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <c-test-coverage-arg> </c-test-coverage-arg>
-      </properties>
-    </profile>
-  </profiles>
+  <properties>
+    <c-test-coverage-arg> </c-test-coverage-arg>
+  </properties>
 
   <build>
     <plugins>
-        <plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
@@ -88,6 +73,7 @@
               </environmentVariables>
               <arguments>
                 <argument>--with-openssl=${c-client-openssl}</argument>
+                <argument>--with-sasl=${c-client-sasl}</argument>
                 <argument>--prefix=${project.build.directory}/c</argument>
                 <argument>${c-test-coverage-arg}</argument>
               </arguments>
@@ -103,9 +89,9 @@
             <id>generate-sources</id>
             <phase>generate-sources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <mkdir dir="target/c" />
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -115,7 +101,7 @@
             <id>build-c-client</id>
             <phase>compile</phase>
             <configuration>
-              <tasks>
+              <target>
                 <exec dir="${basedir}/target/c" executable="make" failonerror="true">
                   <env key="LD_LIBRARY_PATH" value="${env.LD_LIBRARY_PATH};/usr/lib" />
                   <env key="PATH" path="${env.PATH};${basedir};" />
@@ -124,28 +110,7 @@
                   <env key="base_dir" value="${basedir}/../.." />
                   <arg line="clean install" />
                 </exec>
-              </tasks>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-cppunit</id>
-            <phase>test</phase>
-            <configuration>
-              <!-- do not run cpp tests if tests are globally skipped -->
-              <skip>${skipTests}</skip>
-              <tasks>
-                <exec dir="${basedir}/target/c" executable="make" failonerror="true">
-                  <env key="LD_LIBRARY_PATH" value="${env.LD_LIBRARY_PATH};/usr/lib" />
-                  <env key="PATH" path="${env.PATH};${basedir};" />
-                  <env key="CALLER" value="ANT" />
-                  <env key="CLOVER_HOME" value="${basedir}/../../zookeeper-server/target" />
-                  <env key="base_dir" value="${basedir}/../.." />
-                  <arg line="check" />
-                </exec>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -155,28 +120,77 @@
             <id>replace-cclient-files-during-release</id>
             <phase>none</phase>
             <goals>
-               <goal>run</goal>
+              <goal>run</goal>
             </goals>
             <configuration>
-               <target>
-                  <replaceregexp file="include/zookeeper_version.h" match="project.*" replace="project(zookeeper VERSION ${project.version})" byline="true" />
-                  <replace file="include/zookeeper_version.h" value="">
-                      <replaceToken>-SNAPSHOT</replaceToken>
-                  </replace>
-                  <replaceregexp file="CMakeLists.txt" match="project.*" replace="project(zookeeper VERSION ${project.version})" byline="true" />
-                  <replace file="CMakeLists.txt" value="">
-                      <replaceToken>-SNAPSHOT</replaceToken>
-                  </replace>
-                  <replaceregexp file="configure.ac" match="AC_INIT.*" replace="AC_INIT([zookeeper C client],${project.version},[user@zookeeper.apache.org],[zookeeper])" byline="true" />
-                  <replace file="configure.ac" value="">
-                      <replaceToken>-SNAPSHOT</replaceToken>
-                  </replace>
-               </target>
+              <target>
+                <replaceregexp file="include/zookeeper_version.h" match="project.*" replace="project(zookeeper VERSION ${project.version})" byline="true" />
+                <replace file="include/zookeeper_version.h" value="">
+                  <replaceToken>-SNAPSHOT</replaceToken>
+                </replace>
+                <replaceregexp file="CMakeLists.txt" match="project.*" replace="project(zookeeper VERSION ${project.version})" byline="true" />
+                <replace file="CMakeLists.txt" value="">
+                  <replaceToken>-SNAPSHOT</replaceToken>
+                </replace>
+                <replaceregexp file="configure.ac" match="AC_INIT.*" replace="AC_INIT([zookeeper C client],${project.version},[user@zookeeper.apache.org],[zookeeper])" byline="true" />
+                <replace file="configure.ac" value="">
+                  <replaceToken>-SNAPSHOT</replaceToken>
+                </replace>
+              </target>
             </configuration>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>c-test-coverage</id>
+      <properties>
+        <c-test-coverage-arg>--enable-gcov</c-test-coverage-arg>
+      </properties>
+    </profile>
+    <profile>
+      <!-- can be skipped by deactivating the profile with -P!cppunit (may need to escape or quote exclamation on command-line) -->
+      <id>cppunit</id>
+      <activation>
+        <property>
+          <!-- can also be skipped by -DskipCppUnit or with -DskipTests (see below) -->
+          <name>!skipCppUnit</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>test-cppunit</id>
+                <phase>test</phase>
+                <configuration>
+                  <!-- do not run cpp tests if tests are globally skipped -->
+                  <skip>${skipTests}</skip>
+                  <target>
+                    <exec dir="${basedir}/target/c" executable="make" failonerror="true">
+                      <env key="LD_LIBRARY_PATH" value="${env.LD_LIBRARY_PATH};/usr/lib" />
+                      <env key="PATH" path="${env.PATH};${basedir};" />
+                      <env key="CALLER" value="ANT" />
+                      <env key="CLOVER_HOME" value="${basedir}/../../zookeeper-server/target" />
+                      <env key="base_dir" value="${basedir}/../.." />
+                      <arg line="check" />
+                    </exec>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

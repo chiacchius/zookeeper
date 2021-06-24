@@ -18,6 +18,7 @@
 
 package org.apache.zookeeper.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -64,6 +65,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
+import org.apache.zookeeper.server.quorum.flexible.QuorumOracleMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.apache.zookeeper.txn.CheckVersionTxn;
 import org.apache.zookeeper.txn.CloseSessionTxn;
@@ -140,11 +142,11 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
                 Request request = submittedRequests.take();
                 ServerMetrics.getMetrics().PREP_PROCESSOR_QUEUE_TIME
                     .add(Time.currentElapsedTime() - request.prepQueueStartTime);
-                long traceMask = ZooTrace.CLIENT_REQUEST_TRACE_MASK;
-                if (request.type == OpCode.ping) {
-                    traceMask = ZooTrace.CLIENT_PING_TRACE_MASK;
-                }
                 if (LOG.isTraceEnabled()) {
+                    long traceMask = ZooTrace.CLIENT_REQUEST_TRACE_MASK;
+                    if (request.type == OpCode.ping) {
+                        traceMask = ZooTrace.CLIENT_PING_TRACE_MASK;
+                    }
                     ZooTrace.logRequest(LOG, traceMask, 'P', request, "");
                 }
                 if (Request.requestOfDeath == request) {
@@ -321,7 +323,6 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
                     Time.currentWallTime(), type));
         }
 
-        PrecalculatedDigest precalculatedDigest;
         switch (type) {
         case OpCode.create:
         case OpCode.create2:
@@ -331,7 +332,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
             break;
         }
         case OpCode.deleteContainer: {
-            String path = new String(request.request.array());
+            String path = new String(request.request.array(), UTF_8);
             String parentPath = getParentPathAndValidate(path);
             ChangeRecord nodeRecord = getRecordForPath(path);
             if (nodeRecord.childCount > 0) {
@@ -393,6 +394,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
             validatePath(path, request.sessionId);
             nodeRecord = getRecordForPath(path);
             zks.checkACL(request.cnxn, nodeRecord.acl, ZooDefs.Perms.WRITE, request.authInfo, path, null);
+            zks.checkQuota(path, nodeRecord.data, setDataRequest.getData(), OpCode.setData);
             int newVersion = checkAndIncVersion(nodeRecord.stat.getVersion(), setDataRequest.getVersion(), path);
             request.setTxn(new SetDataTxn(path, setDataRequest.getData(), newVersion));
             nodeRecord = nodeRecord.duplicate(request.getHdr().getZxid());
@@ -450,7 +452,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
                 try {
                     Properties props = new Properties();
                     props.load(new StringReader(newMembers));
-                    request.qv = QuorumPeerConfig.parseDynamicConfig(props, lzks.self.getElectionType(), true, false);
+                    request.qv = QuorumPeerConfig.parseDynamicConfig(props, lzks.self.getElectionType(), true, false, lastSeenQV.getOraclePath());
                     request.qv.setVersion(request.getHdr().getZxid());
                 } catch (IOException | ConfigException e) {
                     throw new KeeperException.BadArgumentsException(e.getMessage());
@@ -470,7 +472,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
                     leavingServers = StringUtils.split(leavingServersString, ",");
                 }
 
-                if (!(lastSeenQV instanceof QuorumMaj)) {
+                if (!(lastSeenQV instanceof QuorumMaj) && !(lastSeenQV instanceof QuorumOracleMaj)) {
                     String msg = "Incremental reconfiguration requested but last configuration seen has a non-majority quorum system";
                     LOG.warn(msg);
                     throw new KeeperException.BadArgumentsException(msg);
@@ -512,7 +514,13 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
                 } catch (ConfigException e) {
                     throw new KeeperException.BadArgumentsException("Reconfiguration failed");
                 }
-                request.qv = new QuorumMaj(nextServers);
+
+                if (lastSeenQV instanceof QuorumMaj) {
+                    request.qv = new QuorumMaj(nextServers);
+                } else {
+                    request.qv = new QuorumOracleMaj(nextServers, lastSeenQV.getOraclePath());
+                }
+
                 request.qv.setVersion(request.getHdr().getZxid());
             }
             if (QuorumPeerConfig.isStandaloneEnabled() && request.qv.getVotingMembers().size() < 2) {
@@ -696,6 +704,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
             throw new KeeperException.NoChildrenForEphemeralsException(path);
         }
         int newCversion = parentRecord.stat.getCversion() + 1;
+        zks.checkQuota(path, null, data, OpCode.create);
         if (type == OpCode.createContainer) {
             request.setTxn(new CreateContainerTxn(path, data, listACL, newCversion));
         } else if (type == OpCode.createTTL) {
@@ -766,6 +775,23 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
         request.setHdr(null);
         request.setTxn(null);
 
+        if (!request.isThrottled()) {
+          pRequestHelper(request);
+        }
+
+        request.zxid = zks.getZxid();
+        long timeFinishedPrepare = Time.currentElapsedTime();
+        ServerMetrics.getMetrics().PREP_PROCESS_TIME.add(timeFinishedPrepare - request.prepStartTime);
+        nextProcessor.processRequest(request);
+        ServerMetrics.getMetrics().PROPOSAL_PROCESS_TIME.add(Time.currentElapsedTime() - timeFinishedPrepare);
+    }
+
+    /**
+     * This method is a helper to pRequest method
+     *
+     * @param request
+     */
+    private void pRequestHelper(Request request) throws RequestProcessorException {
         try {
             switch (request.type) {
             case OpCode.createContainer:
@@ -898,6 +924,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
             case OpCode.getEphemerals:
             case OpCode.multiRead:
             case OpCode.addWatch:
+            case OpCode.whoAmI:
                 zks.sessionTracker.checkSession(request.sessionId, request.getOwner());
                 break;
             default:
@@ -940,9 +967,6 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements Req
                 request.setTxn(new ErrorTxn(Code.MARSHALLINGERROR.intValue()));
             }
         }
-        request.zxid = zks.getZxid();
-        ServerMetrics.getMetrics().PREP_PROCESS_TIME.add(Time.currentElapsedTime() - request.prepStartTime);
-        nextProcessor.processRequest(request);
     }
 
     private static List<ACL> removeDuplicates(final List<ACL> acls) {

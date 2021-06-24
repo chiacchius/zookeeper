@@ -61,6 +61,10 @@ public abstract class QuorumZooKeeperServer extends ZooKeeperServer {
     }
 
     public Request checkUpgradeSession(Request request) throws IOException, KeeperException {
+        if (request.isThrottled()) {
+            return null;
+        }
+
         // If this is a request for a local session and it is to
         // create an ephemeral node, then upgrade the session and return
         // a new session request for the leader.
@@ -182,7 +186,7 @@ public abstract class QuorumZooKeeperServer extends ZooKeeperServer {
         pwriter.print("peerType=");
         pwriter.println(self.getLearnerType().ordinal());
         pwriter.println("membership: ");
-        pwriter.print(new String(self.getQuorumVerifier().toString().getBytes()));
+        pwriter.print(self.getQuorumVerifier().toString());
     }
 
     @Override

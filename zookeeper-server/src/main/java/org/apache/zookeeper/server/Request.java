@@ -18,6 +18,7 @@
 
 package org.apache.zookeeper.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.jute.Record;
@@ -27,6 +28,7 @@ import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.metrics.Summary;
 import org.apache.zookeeper.metrics.SummarySet;
+import org.apache.zookeeper.server.quorum.LearnerHandler;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.apache.zookeeper.server.util.AuthUtil;
 import org.apache.zookeeper.txn.TxnDigest;
@@ -100,6 +102,8 @@ public class Request {
 
     public long syncQueueStartTime;
 
+    public long requestThrottleQueueTime;
+
     private Object owner;
 
     private KeeperException e;
@@ -107,6 +111,22 @@ public class Request {
     public QuorumVerifier qv = null;
 
     private TxnDigest txnDigest;
+
+    private boolean isThrottledFlag = false;
+
+    public boolean isThrottled() {
+      return isThrottledFlag;
+    }
+
+    public void setIsThrottled(boolean val) {
+      isThrottledFlag = val;
+    }
+
+    public boolean isThrottlable() {
+        return this.type != OpCode.ping
+                && this.type != OpCode.closeSession
+                && this.type != OpCode.createSession;
+    }
 
     /**
      * If this is a create or close request for a local-only session.
@@ -252,6 +272,7 @@ public class Request {
         case OpCode.checkWatches:
         case OpCode.removeWatches:
         case OpCode.addWatch:
+        case OpCode.whoAmI:
             return true;
         default:
             return false;
@@ -268,6 +289,7 @@ public class Request {
         case OpCode.getData:
         case OpCode.getEphemerals:
         case OpCode.multiRead:
+        case OpCode.whoAmI:
             return false;
         case OpCode.create:
         case OpCode.create2:
@@ -354,6 +376,8 @@ public class Request {
                 return "closeSession";
             case OpCode.error:
                 return "error";
+            case OpCode.whoAmI:
+                return "whoAmI";
             default:
                 return "unknown " + op;
         }
@@ -385,7 +409,7 @@ public class Request {
                 if (pathLen >= 0 && pathLen < 4096 && rbuf.remaining() >= pathLen) {
                     byte[] b = new byte[pathLen];
                     rbuf.get(b);
-                    path = new String(b);
+                    path = new String(b, UTF_8);
                 }
             } catch (Exception e) {
                 // ignore - can't find the path, will output "n/a" instead
@@ -439,30 +463,20 @@ public class Request {
     }
 
     /**
-     * Returns comma separated list of users authenticated in the current
-     * session
+     * Returns a formatted, comma-separated list of the user IDs
+     * associated with this {@code Request}, or {@code null} if no
+     * user IDs were found.
+     *
+     * The return value is used for audit logging.  While it may be
+     * easy on the eyes, it is underspecified: it does not mention the
+     * corresponding {@code scheme}, nor are its components escaped.
+     * This is not a security feature.
+     *
+     * @return a comma-separated list of user IDs, or {@code null} if
+     * no user IDs were found.
      */
-    public String getUsers() {
-        if (authInfo == null) {
-            return (String) null;
-        }
-        if (authInfo.size() == 1) {
-            return AuthUtil.getUser(authInfo.get(0));
-        }
-        StringBuilder users = new StringBuilder();
-        boolean first = true;
-        for (Id id : authInfo) {
-            String user = AuthUtil.getUser(id);
-            if (user != null) {
-                if (first) {
-                    first = false;
-                } else {
-                    users.append(",");
-                }
-                users.append(user);
-            }
-        }
-        return users.toString();
+    public String getUsersForAudit() {
+        return AuthUtil.getUsers(authInfo);
     }
 
     public TxnDigest getTxnDigest() {
@@ -471,5 +485,9 @@ public class Request {
 
     public void setTxnDigest(TxnDigest txnDigest) {
         this.txnDigest = txnDigest;
+    }
+
+    public boolean isFromLearner() {
+        return owner instanceof LearnerHandler;
     }
 }

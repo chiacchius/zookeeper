@@ -24,7 +24,6 @@
     <groupId>org.apache.zookeeper</groupId>
     <artifactId>parent</artifactId>
     <version>3.6.3</version>
-    <relativePath>..</relativePath>
   </parent>
 
   <artifactId>zookeeper-jute</artifactId>
@@ -37,20 +36,25 @@
       <groupId>org.apache.yetus</groupId>
       <artifactId>audience-annotations</artifactId>
     </dependency>
-  <!-- https://mvnrepository.com/artifact/junit/junit -->
-  <dependency>
-    <groupId>junit</groupId>
-    <artifactId>junit</artifactId>
-    <version>4.12</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>org.apache.maven.surefire</groupId>
-    <artifactId>surefire</artifactId>
-    <version>3.0.0-M5</version>
-    <type>pom</type>
-  </dependency>
-</dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/junit/junit -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>surefire</artifactId>
+      <version>3.0.0-M5</version>
+      <type>pom</type>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>
@@ -156,7 +160,7 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
         <configuration>
-            <skip>true</skip>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>

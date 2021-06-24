@@ -18,6 +18,7 @@
 
 package org.apache.zookeeper.server.quorum;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -38,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLSocket;
 import org.apache.jute.BinaryInputArchive;
@@ -46,10 +48,12 @@ import org.apache.jute.InputArchive;
 import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
 import org.apache.zookeeper.ZooDefs.OpCode;
+import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.common.X509Exception;
 import org.apache.zookeeper.server.ExitCode;
 import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ServerCnxn;
+import org.apache.zookeeper.server.ServerMetrics;
 import org.apache.zookeeper.server.TxnLogEntry;
 import org.apache.zookeeper.server.ZooTrace;
 import org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
@@ -87,10 +91,10 @@ public class Learner {
 
     protected Socket sock;
     protected MultipleAddresses leaderAddr;
+    protected AtomicBoolean sockBeingClosed = new AtomicBoolean(false);
 
     /**
      * Socket getter
-     * @return
      */
     public Socket getSocket() {
         return sock;
@@ -118,10 +122,15 @@ public class Learner {
     public static final String LEARNER_ASYNC_SENDING = "zookeeper.learner.asyncSending";
     private static boolean asyncSending =
         Boolean.parseBoolean(ConfigUtils.getPropertyBackwardCompatibleWay(LEARNER_ASYNC_SENDING));
+    public static final String LEARNER_CLOSE_SOCKET_ASYNC = "zookeeper.learner.closeSocketAsync";
+    public static final boolean closeSocketAsync = Boolean
+        .parseBoolean(ConfigUtils.getPropertyBackwardCompatibleWay(LEARNER_CLOSE_SOCKET_ASYNC));
+
     static {
         LOG.info("leaderConnectDelayDuringRetryMs: {}", leaderConnectDelayDuringRetryMs);
         LOG.info("TCP NoDelay set to: {}", nodelay);
         LOG.info("{} = {}", LEARNER_ASYNC_SENDING, asyncSending);
+        LOG.info("{} = {}", LEARNER_CLOSE_SOCKET_ASYNC, closeSocketAsync);
     }
 
     final ConcurrentHashMap<Long, ServerCnxn> pendingRevalidations = new ConcurrentHashMap<Long, ServerCnxn>();
@@ -236,6 +245,10 @@ public class Learner {
      * @throws IOException
      */
     void request(Request request) throws IOException {
+        if (request.isThrottled()) {
+            LOG.error("Throttled request sent to leader: {}. Exiting", request);
+            ServiceUtils.requestSystemExit(ExitCode.UNEXPECTED_ERROR.getValue());
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream oa = new DataOutputStream(baos);
         oa.writeLong(request.sessionId);
@@ -335,6 +348,7 @@ public class Learner {
             throw new IOException("Failed connect to " + multiAddr);
         } else {
             sock = socket.get();
+            sockBeingClosed.set(false);
         }
 
         self.authLearner.authenticate(sock, hostname);
@@ -550,7 +564,13 @@ public class Learner {
             if (qp.getType() == Leader.DIFF) {
                 LOG.info("Getting a diff from the leader 0x{}", Long.toHexString(qp.getZxid()));
                 self.setSyncMode(QuorumPeer.SyncMode.DIFF);
-                snapshotNeeded = false;
+                if (zk.shouldForceWriteInitialSnapshotAfterLeaderElection()) {
+                    LOG.info("Forcing a snapshot write as part of upgrading from an older Zookeeper. This should only happen while upgrading.");
+                    snapshotNeeded = true;
+                    syncSnapshot = true;
+                } else {
+                    snapshotNeeded = false;
+                }
             } else if (qp.getType() == Leader.SNAP) {
                 self.setSyncMode(QuorumPeer.SyncMode.SNAP);
                 LOG.info("Getting a snapshot from leader 0x{}", Long.toHexString(qp.getZxid()));
@@ -623,7 +643,7 @@ public class Learner {
 
                     if (pif.hdr.getType() == OpCode.reconfig) {
                         SetDataTxn setDataTxn = (SetDataTxn) pif.rec;
-                        QuorumVerifier qv = self.configFromString(new String(setDataTxn.getData()));
+                        QuorumVerifier qv = self.configFromString(new String(setDataTxn.getData(), UTF_8));
                         self.setLastSeenQuorumVerifier(qv, true);
                     }
 
@@ -633,7 +653,7 @@ public class Learner {
                 case Leader.COMMITANDACTIVATE:
                     pif = packetsNotCommitted.peekFirst();
                     if (pif.hdr.getZxid() == qp.getZxid() && qp.getType() == Leader.COMMITANDACTIVATE) {
-                        QuorumVerifier qv = self.configFromString(new String(((SetDataTxn) pif.rec).getData()));
+                        QuorumVerifier qv = self.configFromString(new String(((SetDataTxn) pif.rec).getData(), UTF_8));
                         boolean majorChange = self.processReconfig(
                             qv,
                             ByteBuffer.wrap(qp.getData()).getLong(), qp.getZxid(),
@@ -669,7 +689,7 @@ public class Learner {
                         packet.hdr = logEntry.getHeader();
                         packet.rec = logEntry.getTxn();
                         packet.digest = logEntry.getDigest();
-                        QuorumVerifier qv = self.configFromString(new String(((SetDataTxn) packet.rec).getData()));
+                        QuorumVerifier qv = self.configFromString(new String(((SetDataTxn) packet.rec).getData(), UTF_8));
                         boolean majorChange = self.processReconfig(qv, suggestedLeaderId, qp.getZxid(), true);
                         if (majorChange) {
                             throw new Exception("changes proposed in reconfig");
@@ -717,7 +737,7 @@ public class Learner {
                     LOG.info("Learner received NEWLEADER message");
                     if (qp.getData() != null && qp.getData().length > 1) {
                         try {
-                            QuorumVerifier qv = self.configFromString(new String(qp.getData()));
+                            QuorumVerifier qv = self.configFromString(new String(qp.getData(), UTF_8));
                             self.setLastSeenQuorumVerifier(qv, true);
                             newLeaderQV = qv;
                         } catch (Exception e) {
@@ -859,10 +879,27 @@ public class Learner {
     }
 
     void closeSocket() {
+        if (sock != null) {
+            if (sockBeingClosed.compareAndSet(false, true)) {
+                if (closeSocketAsync) {
+                    final Thread closingThread = new Thread(() -> closeSockSync(), "CloseSocketThread(sid:" + zk.getServerId());
+                    closingThread.setDaemon(true);
+                    closingThread.start();
+                } else {
+                    closeSockSync();
+                }
+            }
+        }
+    }
+
+    void closeSockSync() {
         try {
+            long startTime = Time.currentElapsedTime();
             if (sock != null) {
                 sock.close();
+                sock = null;
             }
+            ServerMetrics.getMetrics().SOCKET_CLOSING_TIME.add(Time.currentElapsedTime() - startTime);
         } catch (IOException e) {
             LOG.warn("Ignoring error closing connection to leader", e);
         }

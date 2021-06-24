@@ -1,0 +1,1 @@
+non utilizzando un watcher vero ma solo un mock è impossibile avere una statement coverage del 100% in removeWatches()
