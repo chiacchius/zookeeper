@@ -99,7 +99,7 @@ public class ZooKeeperGetChildrenTest extends ClientBase{
     }
 
     @Test
-    public void getChildren() throws IOException, InterruptedException, CliException, KeeperException {
+    public void getChildren(){
 
         System.out.println(" starting test ");
 

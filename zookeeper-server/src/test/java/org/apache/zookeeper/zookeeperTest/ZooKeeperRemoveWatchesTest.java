@@ -17,7 +17,9 @@ import java.util.concurrent.TimeoutException;
 
 
 
-
+/**
+ * Test the Zookeeper method "removeWatches()"
+ */
 @RunWith(value = Parameterized.class)
 public class ZooKeeperRemoveWatchesTest extends ClientBase {
 
@@ -41,7 +43,7 @@ public class ZooKeeperRemoveWatchesTest extends ClientBase {
 
                 {true, "/noWatchPath", true, Watcher.WatcherType.Data, false },
                 {true, null, true, Watcher.WatcherType.Data, false },
-                //{true, "/noWatchPath", false, Watcher.WatcherType.Data, false },
+                {true, "/noWatchPath", false, Watcher.WatcherType.Data, false },
                 {false, "/noWatchPath",true, null, false },
                 {true, "/noWatchPath", true, Watcher.WatcherType.Children, true },
 
@@ -103,15 +105,15 @@ public class ZooKeeperRemoveWatchesTest extends ClientBase {
 
             if (e.code().intValue() == KeeperException.Code.NOWATCHER.intValue()) {
 
-                result = true;     //se res = true, vuol dire che ho codice d'errore quindi test è OK
+                result = true;     //se res = true, it means that ihave a code error
 
             }
 
-        } catch (IllegalArgumentException e) {     //path non è valido o watcher è null
+        } catch (IllegalArgumentException e) {     //invalid path or null watcher
             System.out.println("############## ILLEGAL ");
             result = true;
 
-        } catch ( InterruptedException e ){  //transazione del server viene interrotta quindi test fallisce
+        } catch ( InterruptedException e ){  //server transaction is aborted then test fails
             System.out.println("############## INTERRUPTED ");
             result = false;
 
