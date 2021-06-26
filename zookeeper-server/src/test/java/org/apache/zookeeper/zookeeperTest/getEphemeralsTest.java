@@ -93,7 +93,8 @@ public class getEphemeralsTest extends ClientBase {
         try {
             actual = zk.getEphemerals(prefixPath);
             if (actual.size()== ephemeral_cnt){
-                result=true;
+
+                result=true; //the size is correct
             }
 
         }catch (IllegalArgumentException e){ //invalid path
@@ -105,12 +106,14 @@ public class getEphemeralsTest extends ClientBase {
 
         Assert.assertEquals(result, expectedResult);
         if (!expectedResult){
+            System.out.println("test finished ");
             return;
         }
         for (int i = 0; i < ephemeral_cnt; i++) {
             String expectedPath = expected[i];
-            Assert.assertTrue(actual.contains(expectedPath));
+            Assert.assertTrue(actual.contains(expectedPath)); //check if a a path is correct
         }
+        System.out.println("test finished ");
 
     }
 
