@@ -80,7 +80,7 @@ public class ZooKeeperRemoveWatchesTest extends ClientBase {
 
     //tries to remove watcher that doesn't exist, and so the server returns an error code
     @Test
-    public void myTest()  {
+    public void removeWatches()  {
 
         boolean result = false;
         System.out.println("starting test");
