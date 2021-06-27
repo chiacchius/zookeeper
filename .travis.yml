@@ -4,6 +4,7 @@ jdk:
 
 
 
+
 cache:
   directories:
   - "$HOME/.m2"
@@ -12,11 +13,11 @@ addons:
   sonarcloud:
     organization: "chiacchius"
     token:
-      secure: "LhI3qtG1nG30Yj+W28KGF00UMjGsd3HTdfyKTDTaCpcCFCm1RZLXa+7juLZGnGwWhK3Pkb3racfxhhf2Y73tuTEao+0Z4dmB39xwcFHpjuE03WTU/fj4VSoXWIOcX/uS28sBIAgfvA0AV15PVJZTkh8spMUp1xcLRFw7qlhIAZr9Dku3FWMUJnnPSfOPOO0jI4ns8tRrJSIVMWCmOyTO+4TgLR15FjgCjNIdai1Xxt2cAEuUKZKmbdFJEPTWYoygbQ/GXmWG++yxNtfkWHz9KpLfWR6NbNrkWX71I1b34ri0LSE7pvi9qDRsEiW6mFvw75YFdZtBucapkJQzaF4PJ5augrZF7i9rYvav/zU8Gno3GKvSB9hiRdC/lwXZOdGkzL+NXywKoNmd+wRIWSy18RYSNsrJNMTAdUxFYLVkxiEAm2BxIJVQVQEbEKQ3xuOgsrmUB8WeaoC6PSsxf2ecoDd1Bc7Ef9+w6ljJiIeIj2OUhaLV2OE3P2FgCzM7OKFO4M7zq2VJDmOyOOmOyBD1v0zPCJHBcizeppHRII6cG2XS3K5Hz3RYKtP0f4XEiyjDle37nW6hieuUC+RI9z1bes/GwIx9yUqKPLfsUG5r6d9e8nOoqqEtbYJcIkkX2LXZtiBLz4KQAPrzRBdMFig+d5pTJU+ngh3TztC8hLb3S+4=" # encrypted value of your token
+      secure: "Z9zgpyh8bU61oITC7LTObVw0yYgC0Dmbcau6MSjeoO25oqt9T95r7UUMRdbPb8ascCU+YYKWMu3CEuMkzamRsbJkqFdBRJfIuDRDxA4qIHY82thLBlOnW3jJ61sCmi+u14rIryf8N6ccvwwR3ojOP5i6ATQrBJJRla+qG9Q/+fP77X0e7z8W/IgJzM1a9jHwV359hdUCTHwpyDl2562DRA4Mn8wUDsmJ/YtIYCGw2xuBZVNozMB8eKyvW0d7Fb5N8ahb1TO9W7V51l6FvJXFVvb/SUm9Fvz8HMxGzIdYCLJBGN9EHuQmTD/VvJbeiNPFIoxsp3wBoGrmvX0P69D5AdhOQXQ1Ny/8EAJ/bn3m8Pb5cQrpv+b0pcrGfoXqK3B9dKfk/FIW8DF2H1iKZqqaWJJNtND2a3ivhPc7ZL2DsthRlx9ML+N+Rnzz5moprkDoeSJ9Ra6ufturo9o+C2AdiaCpCnQ1DbjJtlWDuaO+zpzPrxLmuIcjPzbSXNxNDs3RNTKu8ZVV7v9yqB9Fktc3btmdd+HkaTjYf+43ve+NUYOvMwaDhdosFFoicWp3bWjiszPEYiAwpsCNsXQ0p8VBNA8ObT73x/R9ECB9ELjgY9VKuJKK3yt+YtbcuEBLSyv/vAoy3dldoBBR44ORFHokw9lBFEYgu/h7ejl7Cir3I0c=" # encrypted value of your token
 
 script:
   # the following command line builds the project, runs the tests with coverage and then execute the SonarCloud analysis
-  - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar -Dsonar.projectKey=chiacchius_zookeeper2
+- mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent verify sonar:sonar -Dsonar.login=0234f6b48757a5981957052813bdb070d78f8cd4
 #install: mvn clean install -DskipTests=true
 #script: mvn clean apache-rat:check install -DskipTests spotbugs:check checkstyle:check -Pfull-build
 #script: mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent verify
