@@ -232,9 +232,7 @@ public class ZooKeeperSaslClient {
 
     }
 
-    private SaslClient createSaslClient(
-        final String servicePrincipal,
-        final String loginContext) throws LoginException {
+    private SaslClient createSaslClient(final String servicePrincipal, final String loginContext) throws LoginException {
         try {
             if (!initializedLogin) {
                 synchronized (this) {

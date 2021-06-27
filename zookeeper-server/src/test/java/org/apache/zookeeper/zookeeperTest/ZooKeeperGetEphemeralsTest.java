@@ -20,7 +20,7 @@ import java.util.List;
  * Test the Zookeeper method "getEphemerals()"
  */
 @RunWith(value = Parameterized.class)
-public class getEphemeralsTest extends ClientBase {
+public class ZooKeeperGetEphemeralsTest extends ClientBase {
 
     private boolean expectedResult;
     private static int persintent_cnt = 2;
@@ -31,7 +31,7 @@ public class getEphemeralsTest extends ClientBase {
     private ZooKeeper zk;
 
 
-    public getEphemeralsTest(Boolean expectedResult, String path, int ephemeral_cnt){
+    public ZooKeeperGetEphemeralsTest(Boolean expectedResult, String path, int ephemeral_cnt){
 
         this.expectedResult=expectedResult;
         this.path=path;
@@ -62,9 +62,19 @@ public class getEphemeralsTest extends ClientBase {
 
     @After
     public void teardown() throws Exception {
+        System.out.println("starting tearDown");
+
         expected=null;
         //super.tearDown();
-        zk.close();
+        if (zk!=null){
+            try {
+                zk.close();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("tearDown finished");
+
 
     }
 
@@ -76,7 +86,9 @@ public class getEphemeralsTest extends ClientBase {
                 {true, "/test", 2}, //true also with all natural numbers
                 {false, null, 2},
                 {false, "invalidPath", 2},
-                {true, "/test", 0}
+                {true, "/test", 0},
+                {false, "/invalidPath", 2} //different path --> different ephemerals
+
 
 
         });
@@ -96,16 +108,20 @@ public class getEphemeralsTest extends ClientBase {
 
                 result=true; //the size is correct
             }
+            else {
+                System.out.println("the size isn't correct");
+
+            }
 
         }catch (IllegalArgumentException e){ //invalid path
-            System.out.println("######## INVALID PATH");
-        }catch (Exception e){
-
+            System.out.println("######## ILLEGAL ARGUMENT");
+        }catch (KeeperException e){ //submitRequest error
+            System.out.println("KEEPER");
         }
 
 
         Assert.assertEquals(result, expectedResult);
-        if (!expectedResult){
+        if (!result){
             System.out.println("test finished ");
             return;
         }

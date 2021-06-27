@@ -85,9 +85,11 @@ public class ZooKeeperGetChildrenTest extends ClientBase{
 
     @Parameterized.Parameters
     public static Collection<?> getParameters(){
+
+
         return Arrays.asList(new Object[][] {
 
-                //expectedRes bool, string path, watch
+                //boolean expectedResult, String path, boolean watch
                 {true, "/secondPath1", false},
                 {false, "/secondPath_1", false},
                 {true, "/path1", true},
@@ -111,16 +113,13 @@ public class ZooKeeperGetChildrenTest extends ClientBase{
 
             children = zk.getChildren(path, watch);
 
-        } catch (KeeperException e) {       //path errato
+        } catch (KeeperException e) {       //wrong path
             System.out.println(" wrong path");
             e.printStackTrace();
             result=false;
             Assert.assertEquals(expectedResult ,result);
 
         } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        catch (IllegalArgumentException e){
             e.printStackTrace();
         }
 

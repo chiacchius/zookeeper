@@ -105,7 +105,7 @@ public class ZooKeeperRemoveWatchesTest extends ClientBase {
 
             if (e.code().intValue() == KeeperException.Code.NOWATCHER.intValue()) {
 
-                result = true;     //se res = true, it means that ihave a code error
+                result = true;     //if res = true, it means that i have a code error
 
             }
 
@@ -115,11 +115,9 @@ public class ZooKeeperRemoveWatchesTest extends ClientBase {
 
         } catch ( InterruptedException e ){  //server transaction is aborted then test fails
             System.out.println("############## INTERRUPTED ");
-            result = false;
 
         } catch (NullPointerException e){
             System.out.println("############## NULL POINTER ");
-            result = false;
         }
 
         System.out.println("test finished ");

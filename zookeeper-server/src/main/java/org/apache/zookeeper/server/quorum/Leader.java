@@ -809,7 +809,7 @@ public class Leader extends LearnerMaster {
     /**
      * Close down all the LearnerHandlers
      */
-    void shutdown(String reason) {
+    public void shutdown(String reason) {
         LOG.info("Shutting down");
 
         if (isShutdown) {

@@ -273,7 +273,7 @@ public class LearnerHandler extends ZooKeeperThread {
      */
     private LearnerSyncThrottler syncThrottler = null;
 
-    LearnerHandler(Socket sock, BufferedInputStream bufferedInput, LearnerMaster learnerMaster) throws IOException {
+    public LearnerHandler(Socket sock, BufferedInputStream bufferedInput, LearnerMaster learnerMaster) throws IOException {
         super("LearnerHandler-" + sock.getRemoteSocketAddress());
         this.sock = sock;
         this.learnerMaster = learnerMaster;
