@@ -189,6 +189,7 @@
       <artifactId>surefire</artifactId>
       <version>3.0.0-M5</version>
 
+
       <type>pom</type>
     </dependency>
     <!-- https://mvnrepository.com/artifact/junit/junit -->
@@ -197,6 +198,7 @@
       <artifactId>junit</artifactId>
       <version>4.12</version>
       <scope>test</scope>
+
     </dependency>
   </dependencies>
 
@@ -249,6 +251,7 @@
             </goals>
             <phase>generate-sources</phase>
             <configuration>
+
               <outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
               <resources>
                 <resource>
@@ -271,6 +274,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
+
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>

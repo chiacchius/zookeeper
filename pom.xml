@@ -769,6 +769,10 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
+            <systemPropertyVariables>
+              <build.test.dir>${project.build.directory}/surefire</build.test.dir>
+              <zookeeper.DigestAuthenticationProvider.superDigest>super:D/InIHSb7yEEbrWz8b9l71RjZJU=</zookeeper.DigestAuthenticationProvider.superDigest>
+            </systemPropertyVariables>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
           </configuration>
