@@ -122,6 +122,9 @@ public class ZooKeeperGetChildrenTest extends ClientBase{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        catch (IllegalArgumentException e){
+            e.printStackTrace();
+        }
 
 
 
