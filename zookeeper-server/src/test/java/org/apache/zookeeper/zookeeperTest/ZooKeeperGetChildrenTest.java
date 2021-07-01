@@ -124,7 +124,7 @@ public class ZooKeeperGetChildrenTest extends ClientBase{
             Assert.assertEquals(expectedResult ,result);
             e.printStackTrace();
         }
-        catch (IllegalArgumentException e){ //null path
+        catch (IllegalArgumentException e){ //null or invalid path
             result=false;
             Assert.assertEquals(expectedResult ,result);
             e.printStackTrace();

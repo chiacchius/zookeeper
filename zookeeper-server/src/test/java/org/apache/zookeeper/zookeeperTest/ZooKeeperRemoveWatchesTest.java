@@ -121,7 +121,7 @@ public class ZooKeeperRemoveWatchesTest extends ClientBase {
         }
 
         System.out.println("test finished ");
-        Assert.assertEquals(expectedResult,result);
+        Assert.assertEquals(expectedResult, result);
     }
 
 

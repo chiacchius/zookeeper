@@ -87,7 +87,7 @@ public class ZooKeeperGetEphemeralsTest extends ClientBase {
                 {false, null, 2},
                 {false, "invalidPath", 2},
                 {true, "/test", 0},
-                {false, "/invalidPath", 2} //different path --> different ephemerals
+                {false, "/differentPath", 2} //different path --> different ephemerals
 
 
 
