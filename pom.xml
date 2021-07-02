@@ -451,6 +451,10 @@
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
+      <properties>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>chiacchius</sonar.organization>
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -464,6 +468,10 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>
@@ -506,11 +514,14 @@
     <!-- parameters to pass to C client build -->
     <c-client-openssl>yes</c-client-openssl>
     <c-client-sasl>yes</c-client-sasl>
-
+    <sonar.projectKey>chiacchius:${project.groupId}:${project.artifactId}</sonar.projectKey>
+    <sonar.links.homepage>https://github.com/chiacchius/zookeeper</sonar.links.homepage>
+    <sonar.links.ci>https://travis-ci.com/github/chiacchius/zookeeper</sonar.links.ci>
+    <sonar.links.scm>https://github.com/chiacchius/zookeeper</sonar.links.scm>
+    <sonar.links.issue>https://github.com/chiacchius/zookeeper/issues</sonar.links.issue>
     <aggregate.report.dir>tests/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
 
-    <sonar.projectKey>chiacchius_zookeeper</sonar.projectKey>
-    <sonar.moduleKey>${artifactId}</sonar.moduleKey>
+
 
   </properties>
 
