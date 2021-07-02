@@ -92,7 +92,7 @@ public class ObserverMasterStartForwardingTest {
                 {true, validLh, 30, false},
                 {false, null, 30, true},
                 {true, validLh, FIRST_PACKET_ID-1, true},
-                {true, validLh, FIRST_PACKET_ID+1, true},
+                //{true, validLh, FIRST_PACKET_ID+1, true},
                 {false, validLh, FIRST_PACKET_ID-2, true},
                 {true, validLh, LAST_PACKET_ID+1, true}
         });
