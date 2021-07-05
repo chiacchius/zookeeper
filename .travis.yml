@@ -18,6 +18,7 @@ addons:
 script:
  
    - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent verify sonar:sonar -Dsonar.login=da0e008f121f5c655169c42021afb37858a9f1a5
+   - mvn verify -Ppit  -Dmaven.javadoc.skip=true
 
 branches:
   only:
